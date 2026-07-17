@@ -1,0 +1,35 @@
+# Raw and processed data
+data/*
+!data/.gitkeep
+
+# Analysis outputs
+results/*
+!results/.gitkeep
+logs/*
+!logs/.gitkeep
+docs/reports/*
+!docs/reports/.gitkeep
+
+# Large single-cell files
+*.bam
+*.bai
+*.fastq
+*.fq
+*.fastq.gz
+*.fq.gz
+*.h5
+*.h5ad
+*.loom
+*.rds
+*.qs
+*.qs2
+*.tmp
+
+# R and editor state
+.Rhistory
+.RData
+.Rproj.user/
+.vscode/
+.idea/
+__pycache__/
+.ipynb_checkpoints/

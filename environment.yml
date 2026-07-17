@@ -1,0 +1,19 @@
+name: scrna-workflow
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base
+  - r-seurat
+  - bioconductor-singlecellexperiment
+  - bioconductor-scdblfinder
+  - bioconductor-celda
+  - bioconductor-glmgampoi
+  - r-dplyr
+  - r-ggplot2
+  - r-scales
+  - r-rcolorbrewer
+  - r-matrix
+  - r-harmony
+  - r-ggalluvial
+  - r-qs2

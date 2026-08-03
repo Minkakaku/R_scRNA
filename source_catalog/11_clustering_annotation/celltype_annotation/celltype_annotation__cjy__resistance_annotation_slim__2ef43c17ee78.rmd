@@ -1,0 +1,60 @@
+### 3.6 抗性基因注释
+
+&emsp;&emsp;不管是人肠道微生物还是其他环境微生物中，抗性基因（Antibiotics Resistance Gene，ARG）是普遍存在的。抗生素的滥用导致人体和环境中微生物群落发生不可逆的变化，对人体健康和生态环境造成风险，因此抗性基因的相关研究受到了研究者的广泛关注。CARD<sup>[29]</sup>是近年来新出现的抗性基因数据库，它具有信息全面，对用户友好，更新维护及时等优势。该数据库以ARO（Antibiotic Resistance Ontology）为分类单位的形式所构建，ARO整合了抗性基因、序列、抗生素抗性、作用机制、抗性基因之间的关联等信息，并在线提供抗性基因与PDB、NCBI等数据库的接口。
+
+&nbsp;
+
+#### 3.6.1 抗性基因注释基本步骤
+
+&emsp;&emsp;1. 使用CARD数据库（v2.0.1）提供的Resistance Gene Identifier（RGI）<sup>[29]</sup>软件将去冗余基因序列与CARD数据库进行比对（RGI内置blastp<sup>[30]</sup>，采用bitscore值对比对结果进行评分）
+
+&emsp;&emsp;2. 根据RGI的比对结果，结合去冗余基因的丰度信息，统计出各抗性基因的相对丰度；
+
+&emsp;&emsp;3. 从抗性基因的丰度出发，进行丰度柱形图展示，丰度聚类热图展示，丰度分布圈图展示，组间抗性基因差异分析等（对部分名称较长的抗性基因，用其前三个单词与下划线缩写的形式展示）。
+
+<center>&nbsp;</center>
+
+&emsp;&emsp;**结果文件：**
+
+- 所有Unigene的CARD数据库抗性基因注释结果文件：results/06.resistance_annotation/CARD/RGI/unigene.card.annotation.xls；
+- 抗性基因的绝对丰度表: results/06.resistance_annotation/CARD/absolute/unigene.card.absolute.xls；
+- 抗性基因的相对丰度表: results/06.resistance_annotation/CARD/relative/unigene.card.relative.xls。
+
+&nbsp;
+
+#### 3.6.2 抗性基因丰度概况
+
+&emsp;&emsp;从抗性基因的相对丰度表出发，选取出在各样本中的最大相对丰度排名前20的注释结果，绘制出相对丰度柱形图，如下所示：
+
+#####  {- .toc-ignore .tabset .tabset-dropdown}
+
+```{r, echo=FALSE, results='asis'}
+
+card_barplot_files <- Sys.glob(file.path(params$card_barplot_dir, "*.png"))
+card_barplot_files <- card_barplot_files[!grepl("\\.group\\.barplot\\.png$", card_barplot_files)]
+contrast_list <- basename(card_barplot_files)
+contrast_list <- gsub("\\.top.*\\.barplot\\.png", "", contrast_list)
+sort_contrast_list <- contrast_list[order(lengths(strsplit(contrast_list, "-vs-")))]
+
+
+for (contrast in sort_contrast_list) {
+  pic <- Sys.glob(file.path(params$card_barplot_dir, glue("{contrast}.top*.barplot.png")))
+  pic <- pic[!grepl("\\.group\\.barplot\\.png$", pic)]
+  cat("###### ", contrast, " \n")
+  cat("\n")
+  cat("![](", pic, "){width=70%}", "\n")
+  cat("<center>**图3.6.2-1 抗性基因相对丰度柱形图**</center>", "\n")
+  cat("<center>&nbsp;</center>", "\n")
+  cat("<center>**说明** 横轴表示样本名称；纵轴表示抗性基因的相对比例；各颜色区块对应的功能注释结果见右侧图例。</center>", "\n")
+  cat("<center>&nbsp;<center>", "\n")
+  cat("\n")
+}
+
+```
+
+##### {- .toc-ignore}
+
+&emsp;&emsp;**结果文件：**
+
+- 样本水平的抗性基因相对丰度柱形图和表格: results/06.resistance_annotation/CARD/barplot/\*.top20.ARO.barplot.{pdf,png,xls}；
+- 分组水平的抗性基因相对丰度柱形图和表格: results/06.resistance_annotation/CARD/barplot/\*.top20.ARO.group.barplot.{pdf,png,xls}。

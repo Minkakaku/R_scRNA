@@ -1,0 +1,6 @@
+#Rscript scTenifoldKnk.R -i All_filter_state_samp_new_with_CNs10-15_N.rds -o ./N_MMP14_results --max_cells 2000 --nComp 3 --fdr_threshold 0.1 --min_cells 10 -g MMP14 --celltype_col celltype --celltype "matri-prod CAF" && \
+#Rscript scTenifoldKnk.R -i All_filter_state_samp_new_with_CNs10-15_A.rds -o ./A_MMP14_results --max_cells 2000 --nComp 3 --fdr_threshold 0.1 --min_cells 10 -g MMP14 --celltype_col celltype --celltype "matri-prod CAF" && \
+#Rscript scTenifoldKnk.R -i All_filter_state_samp_new_with_CNs10-15_C.rds -o ./C_MMP14_results --max_cells 2000 --nComp 3 --fdr_threshold 0.1 --min_cells 10 -g MMP14 --celltype_col celltype --celltype "matri-prod CAF" && \
+#Rscript scTenifoldKnk.R -i All_filter_state_samp_new_with_CNs10-15_N.rds -o ./N_THY1_results --max_cells 2000 --nComp 3 --fdr_threshold 0.1 --min_cells 10 -g THY1 --celltype_col celltype --celltype "matri-prod CAF" && \
+#Rscript scTenifoldKnk.R -i All_filter_state_samp_new_with_CNs10-15_A.rds -o ./A_THY1_results --max_cells 2000 --nComp 3 --fdr_threshold 0.1 --min_cells 10 -g THY1 --celltype_col celltype --celltype "matri-prod CAF" && \
+Rscript scTenifoldKnk.R -i All_filter_state_samp_new_with_CNs10-15_C.rds -o ./C_THY1_results --max_cells 2000 --nComp 3 --fdr_threshold 0.1 --min_cells 10 -g THY1 --celltype_col celltype --celltype "matri-prod CAF" 

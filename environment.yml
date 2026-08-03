@@ -5,6 +5,8 @@ channels:
 dependencies:
   - r-base
   - r-seurat
+  - bioconductor-pcatools
+  - r-nfactors
   - bioconductor-singlecellexperiment
   - bioconductor-scdblfinder
   - bioconductor-celda

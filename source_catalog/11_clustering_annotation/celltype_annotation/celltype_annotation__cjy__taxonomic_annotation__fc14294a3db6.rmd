@@ -1,0 +1,428 @@
+### 3.4 物种注释
+
+#### 3.4.1 物种注释基本步骤
+
+&emsp;&emsp;1. 为了研究样品物种组成及多样性信息，我们使用Kaiju软件<sup>[14]</sup>将去冗余基因集（Unigenes）中的代表序列同NCBI的NR数据库进行比对，筛选具有最高序列相似性的蛋白，通过NR数据库对应的分类学信息数据库获得物种注释；
+
+&emsp;&emsp;2. 根据物种注释结果和非冗余基因定量结果，计算各个样品在各个分类层级（界Kingdom、门Phylum、纲Class、目Order、科Family、属Genus、种Species）上的绝对（Absolute）和相对（Relative）丰度信息度，从而构建相应分类学水平上的丰度谱（Abundance profile）；
+
+&emsp;&emsp;3. 从各个分类层级上的丰度表出发，进行Krona分析，丰度概况展示，丰度聚类分析，PCA、NMDS和PCoA降维分析，Anosim组间差异分析，组间差异物种LEfSe多元统计分析。
+
+<center>&nbsp;</center>
+
+&emsp;&emsp;**结果文件：**
+
+- 所有去冗余基因的NR数据库注释结果文件：results/04.taxonomic_annotation/NR/unigene.NR.xls；
+- 各个物种层级的绝对丰度表: results/04.taxonomic_annotation/abundance/absolute/unigene.\*.absolute.xls；
+- 各个物种层级的相对丰度表: results/04.taxonomic_annotation/abundance/relative/unigene.\*.relative.xls。
+
+&nbsp;
+
+#### 3.4.2 物种丰度概况
+
+&emsp;&emsp;为了综合而直观的展示各样本中，不同分类层级的物种相对丰度，我们采用Krona<sup>[15]</sup>对物种注释结果进行可视化展示，Krona 示例图如下所示，详细结果请[点击](../04.taxonomic_annotation/krona/taxonomy.krona.html)。
+
+![](`r params$krona_example_pic`){width=60%}
+
+<center>**图3.4.2-1 使用Krona对物种注释结果进行展示（示例图）**</center>
+
+<center>&nbsp;</center>
+
+<center>**说明** 图中，圆圈从内到外依次代表不同的分类级别（界门纲目科属种）；扇形的大小代表不同物种的相对比例；更多详细的信息请参考[Krona展示结果详解](https://github.com/marbl/Krona/wiki/)。</center>
+
+<center>&nbsp;</center>
+
+&emsp;&emsp;从不同分类层级的相对丰度表出发，选取出在各样本中的最大相对丰度排名前10的物种，并将其余的物种设置为Others，绘制出各样本对应的物种注释结果在不同分类层级上的相对丰度柱形图，如下所示：
+
+#####  {- .toc-ignore .tabset .tabset-dropdown}
+
+```{r, echo=FALSE, results='asis'}
+
+tax_order <- c("Genus", "Kingdom", "Phylum", "Class", "Order", "Family", "Species")
+contrast_list <- basename(Sys.glob(file.path(params$tax_barplot_dir, "*")))
+sort_contrast_list <- contrast_list[order(lengths(strsplit(contrast_list, "-vs-")))]
+
+for (contrast in sort_contrast_list) {
+  sample_barplot_files <- Sys.glob(file.path(params$tax_barplot_dir, contrast, "*.barplot.png"))
+  sample_barplot_files <- sample_barplot_files[!grepl("\\.group\\.barplot\\.png$", sample_barplot_files)]
+  tax_level_list <- gsub(".*\\.top.*\\.", "", gsub(".barplot.png", "", basename(sample_barplot_files)))
+  tax_level_list <- tax_level_list[order(match(tax_level_list, tax_order))]
+  for (tax in tax_level_list) {
+    pic <- Sys.glob(file.path(params$tax_barplot_dir, contrast, glue("{contrast}.top*.{tax}.barplot.png")))
+    pic <- pic[!grepl("\\.group\\.barplot\\.png$", pic)]
+    cat("###### ", contrast, " - ", tax, " \n")
+    cat("\n")
+    cat("![](", pic, "){width=75%}", "\n")
+    cat("<center>**图3.4.2-2 物种相对丰度柱形图**</center>", "\n")
+    cat("<center>&nbsp;</center>", "\n")
+    cat("<center>**说明** 横轴表示样本名称；纵轴表示注释到某类型的物种的相对比例；各颜色区块对应的物种类别见右侧图例。</center>", "\n")
+    cat("<center>&nbsp;<center>", "\n")
+    cat("\n")
+  }
+}
+
+```
+
+##### {- .toc-ignore}
+
+&emsp;&emsp;**结果文件：**
+
+- Krona展示结果html文件：results/04.taxonomic_annotation/krona/taxonomy.krona.html；
+- 样本水平的各分类层级top10物种相对丰度柱形图和表格: results/04.taxonomic_annotation/barplot/\*/\*.top10.\*.barplot.{pdf,png,xls}；
+- 分组水平的各分类层级top10物种相对丰度柱形图和表格: results/04.taxonomic_annotation/barplot/\*/\*.top10.\*.group.barplot.{pdf,png,xls}。
+
+&nbsp;
+
+#### 3.4.3 物种Alpha多样性分析 {.tabset .tabset-dropdown}
+
+&emsp;&emsp;Alpha多样性<sup>[16]</sup>（Alpha diversity）反映的是单个样本物种丰富度（richness）及物种多样性（diversity），有多种衡量指标：
+
+&emsp;&emsp;1. **Chao1和Ace指数**：衡量物种丰富度即物种数量的多少。
+
+&emsp;&emsp;2. **Shannon和Simpson指数**：衡量物种多样性，受样品群落中物种丰富度和物种均匀度（Community evenness）的影响。相同物种丰富度的情况下，群落中各物种具有越大的均匀度，则认为群落具有越大的多样性，Shannon指数和Simpson指数值越大，说明样品的物种多样性越高。
+
+&emsp;&emsp;3. **Pielou's evenness指数**：用于度量群落中相对物种丰富度，又称Shannon均匀度（Shannon’s evenness），是群落实际的香农指数与具有相同物种丰富度的群落中能够获得的最大香农指数的比值；如果所有物种具有相同的相对丰度，则该值为1。
+
+<center>**表3.4.3-1 Alpha多样性指数结果统计表**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+tax_alpha_results_df <- read.table(
+  file.path(params$tax_alpha_dir, "alpha.results.xls"),
+  header = T,
+  na.strings = c("NA"),
+  sep = "\t"
+)
+
+js <- c(
+  "function(thead, data, start, end, display) {",
+  "  $('th', thead).css({'background-color': '#377EB8', 'color': 'white'});",
+  "}"
+)
+
+datatable(
+  tax_alpha_results_df,
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
+  colnames = c("Sample", "observed_species", "ACE", "Chao1", "Shannon",
+               "Simpson", "pielou_evenness"),
+  option = list(
+    fixedColumns = list(leftColumns = 1),
+    scrollX = TRUE,
+    pageLength = 5,
+    dom = 'Blfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    headerCallback = JS(js)
+  )
+)
+```
+
+<center>**说明** **Sample**：样本名称； **observed_species**：检测到的物种数；**ACE**：ACE（Abundance-based Coverage Estimator）指数是基于丰度的覆盖估计值，是用来估计群落中含有物种数目的指数；**Chao1**：Chao1指数是物种数目丰富度的衡量标准之一； **Shannon**：香农指数（Shannon-Wiener Index），用来估算样品中微生物的多样性指数之一；**Simpson**：辛普森指数（Simpson Index），用来估算样品中微生物的多样性指数之一；**pielou_evenness**：Pielou均匀度指数（Pielou’s Evenness Index），是最常用的均匀度指数。</center>
+
+<center>&nbsp;</center>
+
+```{r, echo=FALSE, results='asis'}
+
+alpha_diversity_list <- basename(Sys.glob(file.path(params$tax_alpha_dir, "*.png")))
+alpha_diversity_list <- gsub(".*\\.alpha.", "", alpha_diversity_list)
+alpha_diversity_list <- gsub(".png", "", alpha_diversity_list)
+alpha_diversity_list <- alpha_diversity_list[match(c("Chao1", "ACE", "Shannon", "Simpson", "pielou_evenness"), alpha_diversity_list)]
+contrast_list <- basename(Sys.glob(file.path(params$tax_alpha_dir, "*.png")))
+contrast_list <- unique(gsub("\\.alpha\\..*\\.png", "", contrast_list))
+sort_contrast_list <- contrast_list[order(lengths(strsplit(contrast_list, "-vs-")))]
+
+for (contrast in sort_contrast_list) {
+  for (alpha_diversity in alpha_diversity_list) {
+    pic <- file.path(params$tax_alpha_dir, glue("{contrast}.alpha.{alpha_diversity}.png"))
+    cat("##### ", contrast, " - ", alpha_diversity, " \n")
+    cat("\n")
+    cat("![](", pic, "){width=60%}", "\n")
+    cat("<center>**图3.4.3-1 Alpha多样性指数分布箱型图**</center>", "\n")
+    cat("<center>&nbsp;</center>", "\n")
+    cat("<center>**说明** 横坐标为各个分组信息；纵坐标为一种Alpha多样性指数值；组内各样本的Alpha多样性指数值以黑点表示；柱子间连线上的数字为两两分组之间该指数组间差异T检验的P值。</center>", "\n")
+    cat("<center>&nbsp;<center>", "\n")
+    cat("\n")
+  }
+}
+
+```
+
+#### {- .toc-ignore}
+
+&emsp;&emsp;**结果文件：**
+
+- Alpha多样性指数结果统计表：results/04.taxonomic_annotation/alpha_diversity/alpha.results.xls；
+- Alpha多样性指数分布箱型图: results/04.taxonomic_annotation/alpha_diversity/\*.alpha.\*.{pdf,png}。
+
+&nbsp;
+
+#### 3.4.4 物种Beta多样性分析
+
+&emsp;&emsp;Beta多样性<sup>[17]</sup>指的是沿环境梯度不同生境群落之间物种组成的相异性，也被称为生境间的多样性（between-habitat diversity），是对不同样品的微生物群落的构成进行比较。不同群落或样本之间的物种组成相似性越低，Beta多样性越大。我们可以通过计算样本间距离（如Bray-Curtis距离<sup>[18]</sup>，同时考虑丰富度和丰度信息），获得Beta多样性指数。
+
+##### 3.4.4.1 物种丰度聚类分析
+
+&emsp;&emsp;从不同分类层级的相对丰度表出发，选取各分类层级平均丰度排名前30的物种绘制热图，从样本和物种层面进行聚类，便于结果展示和信息发现，从而找出样本中聚集较多的物种，结果展示如下图所示：
+
+##### 物种丰度聚类热图 {.tabset .tabset-dropdown .toc-ignore}
+
+```{r, echo=FALSE, results='asis'}
+
+tax_order <- c("Genus", "Kingdom", "Phylum", "Class", "Order", "Family", "Species")
+contrast_list <- basename(Sys.glob(file.path(params$tax_heatmap_dir, "*")))
+sort_contrast_list <- contrast_list[order(lengths(strsplit(contrast_list, "-vs-")))]
+
+for (contrast in sort_contrast_list) {
+  tax_level_list <- gsub(".*\\.top.*\\.", "", gsub(".heatmap.png", "", basename(Sys.glob(file.path(params$tax_heatmap_dir, contrast, "*.heatmap.png")))))
+  tax_level_list <- tax_level_list[order(match(tax_level_list, tax_order))]
+  for (tax in tax_level_list) {
+    pic <- Sys.glob(file.path(params$tax_heatmap_dir, contrast, glue("{contrast}.top*.{tax}.heatmap.png")))
+    cat("###### ", contrast, " - ", tax, " \n")
+    cat("\n")
+    cat("![](", pic, "){width=60%}", "\n")
+    cat("<center>**图3.4.4.1-1 物种丰度聚类热图**</center>", "\n")
+    cat("<center>&nbsp;</center>", "\n")
+    cat("<center>**说明** 横向为样本信息；纵向为物种信息；图中左侧的聚类树为物种聚类树，上方的聚类树为样本聚类树；
+  中间热图对应的值为每一行物种相对丰度经过标准化处理后得到的Z值；即一个样本在某个分类上的Z值为样本在该分类上的相对丰度和所有样本在该分类的平均相对丰度的差除以所有样本在该分类上的标准差所得到的值。</center>", "\n")
+    cat("<center>&nbsp;<center>", "\n")
+    cat("\n")
+  }
+}
+
+```
+
+##### {- .toc-ignore}
+
+&emsp;&emsp;为了研究不同样品的相似性，还可以通过对样品进行聚类分析，构建样本的聚类树。Bray-Curtis距离是系统聚类法中使用最普遍的一个距离指标，它主要用来刻画样品间的相近程度，它的大小是进行样品分类的主要依据。
+
+&emsp;&emsp;从非冗余基因在各样本中的丰度表出发，以Bray-Curtis距离矩阵进行样本间聚类分析，并将聚类结果与各样本在各分类层级上的物种相对丰度整合进行展示，如下图所示：
+
+##### 物种丰度聚类树 {.tabset .tabset-dropdown .toc-ignore}
+
+```{r, echo=FALSE, results='asis'}
+
+tax_order <- c("Genus", "Kingdom", "Phylum", "Class", "Order", "Family", "Species")
+contrast_list <- basename(Sys.glob(file.path(params$tax_tree_dir, "*")))
+sort_contrast_list <- contrast_list[order(lengths(strsplit(contrast_list, "-vs-")))]
+
+for (contrast in sort_contrast_list) {
+  tax_level_list <- gsub(".*\\.", "", gsub(".tree.png", "", basename(Sys.glob(file.path(params$tax_tree_dir, contrast, "*.tree.png")))))
+  tax_level_list <- tax_level_list[order(match(tax_level_list, tax_order))]
+  for (tax in tax_level_list) {
+    pic <- file.path(params$tax_tree_dir, contrast, glue("{contrast}.{tax}.tree.png"))
+    cat("###### ", contrast, " - ", tax, " \n")
+    cat("\n")
+    cat("![](", pic, "){width=80%}", "\n")
+    cat("<center>**图3.4.4.1-2 基于Bray-Curtis距离的物种丰度聚类树**</center>", "\n")
+    cat("<center>&nbsp;</center>", "\n")
+    cat("<center>**说明** 图中，左侧是Bray-Curtis距离聚类树结构；右侧的是各样本在各分类层级上的物种相对丰度分布图。</center>", "\n")
+    cat("<center>&nbsp;<center>", "\n")
+    cat("\n")
+  }
+}
+
+```
+
+##### {- .toc-ignore}
+
+&emsp;&emsp;**结果文件：**
+
+- 物种丰度聚类热图：results/04.taxonomic_annotation/heatmap/\*/\*.top30.\*.heatmap.{pdf,png}；
+- 物种丰度聚类树: results/04.taxonomic_annotation/cluster_tree/\*/\*.\*.tree.{pdf,png}。
+
+&nbsp;
+
+##### 3.4.4.2 物种丰度降维分析
+
+&emsp;&emsp;前适用于生态学研究的降维分析主要是主成分分析（PCA，Principal Component Analysis）<sup>[19]</sup>和无度量多维标定法（NMDS，Non-Metric Multi-Dimensional Scaling）分析<sup>[20]</sup>。其中，PCA是基于线型模型的一种降维分析，它应用方差分解的方法对多维数据进行降维，从而提取出数据中最主要的元素和结构；PCA能够提取出最大程度反映样品间差异的两个坐标轴，从而将多维数据的差异反映在二维坐标图上，进而揭示复杂数据背景下的简单规律。而NMDS是非线性模型，其目的是为了克服线性模型的缺点，更好地反映生态学数据的非线性结构，应用NMDS分析，根据样本中包含的物种信息，以点的形式反映在多维空间上，而不同样本间的差异程度则是通过点与点间的距离体现，能够反映样本的组间或组内差异等。 基于不同分类层级的物种丰度表，我们进行了PCA和NMDS分析，如果样本的物种组成越相似，则它们在PCA和NMDS图中的距离则越接近。
+
+##### 物种丰度PCA图 {.tabset .tabset-dropdown .toc-ignore}
+
+```{r, echo=FALSE, results='asis'}
+
+tax_order <- c("Genus", "Kingdom", "Phylum", "Class", "Order", "Family", "Species")
+contrast_list <- basename(Sys.glob(file.path(params$tax_pca_dir, "*")))
+sort_contrast_list <- contrast_list[order(lengths(strsplit(contrast_list, "-vs-")))]
+
+for (contrast in sort_contrast_list) {
+  tax_level_list <- gsub(".*\\.", "", gsub(".PCA.png", "", basename(Sys.glob(file.path(params$tax_pca_dir, contrast, "*.PCA.png")))))
+  tax_level_list <- tax_level_list[order(match(tax_level_list, tax_order))]
+  for (tax in tax_level_list) {
+    pic <- file.path(params$tax_pca_dir, contrast, glue("{contrast}.{tax}.PCA.png"))
+    cat("###### ", contrast, " - ", tax, " \n")
+    cat("\n")
+    cat("![](", pic, "){width=60%}", "\n")
+    cat("<center>**图3.4.4.2-1 物种丰度PCA图**</center>", "\n")
+    cat("<center>&nbsp;</center>", "\n")
+    cat("<center>**说明** 横坐标表示第一主成分，百分比则表示第一主成分对样本差异的贡献值；纵坐标表示第二主成分，百分比表示第二主成分对样本差异的贡献值；图中的每个点表示一个样本，同一个组的样本使用同一种颜色表示。</center>", "\n")
+    cat("<center>&nbsp;<center>", "\n")
+    cat("\n")
+  }
+}
+
+```
+
+##### {- .toc-ignore}
+
+&emsp;&emsp;主坐标分析（PCoA，Principal Co-ordinates Analysis），是通过一系列的特征值和特征向量排序从多维数据中提取出最主要的元素和结构，PCA是主坐标分析（PCoA）的一种特殊情况（基于欧式距离的PCoA就是PCA）。我们基于Bray-Curtis距离来进行PCoA分析，并选取贡献率最大的主坐标组合进行作图展示。如果样本距离越接近，表示物种组成结构越相似，因此群落结构相似度高的样品倾向于聚集在一起，群落差异很大的样本则会远远分开。基于不同分类层级的物种丰度表得到Bray-Curtis距离矩阵，我们进行了PCoA分析。
+
+##### 物种丰度PCoA图 {.tabset .tabset-dropdown .toc-ignore}
+
+```{r, echo=FALSE, results='asis'}
+
+tax_order <- c("Genus", "Kingdom", "Phylum", "Class", "Order", "Family", "Species")
+contrast_list <- basename(Sys.glob(file.path(params$tax_pcoa_dir, "*")))
+sort_contrast_list <- contrast_list[order(lengths(strsplit(contrast_list, "-vs-")))]
+
+for (contrast in sort_contrast_list) {
+  tax_level_list <- gsub(".*\\.", "", gsub(".PCoA.png", "", basename(Sys.glob(file.path(params$tax_pcoa_dir, contrast, "*.PCoA.png")))))
+  tax_level_list <- tax_level_list[order(match(tax_level_list, tax_order))]
+  for (tax in tax_level_list) {
+    pic <- file.path(params$tax_pcoa_dir, contrast, glue("{contrast}.{tax}.PCoA.png"))
+    cat("###### ", contrast, " - ", tax, " \n")
+    cat("\n")
+    cat("![](", pic, "){width=60%}", "\n")
+    cat("<center>**图3.4.4.2-2 物种丰度PCoA图**</center>", "\n")
+    cat("<center>&nbsp;</center>", "\n")
+    cat("<center>**说明**  横坐标表示一个主成分，纵坐标表示另一个主成分，百分比表示主成分对样品差异的贡献值；图中的每个点表示一个样品，同一个组的样品使用同一种颜色表示。</center>", "\n")
+    cat("<center>&nbsp;<center>", "\n")
+    cat("\n")
+  }
+}
+
+```
+
+##### {- .toc-ignore}
+
+##### 物种丰度NMDS图 {.tabset .tabset-dropdown .toc-ignore}
+
+```{r, echo=FALSE, results='asis'}
+
+tax_order <- c("Genus", "Kingdom", "Phylum", "Class", "Order", "Family", "Species")
+contrast_list <- basename(Sys.glob(file.path(params$tax_nmds_dir, "*")))
+sort_contrast_list <- contrast_list[order(lengths(strsplit(contrast_list, "-vs-")))]
+
+for (contrast in sort_contrast_list) {
+  tax_level_list <- gsub(".*\\.", "", gsub(".NMDS.png", "", basename(Sys.glob(file.path(params$tax_nmds_dir, contrast, "*.NMDS.png")))))
+  tax_level_list <- tax_level_list[order(match(tax_level_list, tax_order))]
+  for (tax in tax_level_list) {
+    pic <- file.path(params$tax_nmds_dir, contrast, glue("{contrast}.{tax}.NMDS.png"))
+    cat("###### ", contrast, " - ", tax, " \n")
+    cat("\n")
+    cat("![](", pic, "){width=60%}", "\n")
+    cat("<center>**图3.4.4.2-3 物种丰度NMDS图**</center>", "\n")
+    cat("<center>&nbsp;</center>", "\n")
+    cat("<center>**说明** 图中的每个点表示一个样品，点与点之间的距离表示差异程度，同一个组的样品使用同一种颜色表示；Stress小于0.2时，表明NMDS分析具有一定的可靠性。</center>", "\n")
+    cat("<center>&nbsp;<center>", "\n")
+    cat("\n")
+  }
+}
+
+```
+
+##### {- .toc-ignore}
+
+
+
+&emsp;&emsp;**结果文件：**
+
+- 物种丰度PCA图和表格：results/04.taxonomic_annotation/PCA/\*/\*.\*.PCA.{pdf,png,xls}；
+- 物种丰度NMDS图和表格: results/04.taxonomic_annotation/NMDS/\*/\*.\*.NMDS.{pdf,png,xls}；
+- 物种丰度PCoA图和表格: results/04.taxonomic_annotation/PCoA/\*/\*.\*.PCoA.{pdf,png,xls}；
+
+&nbsp;
+
+##### 3.4.4.3 物种丰度Anosim分析 {.tabset .tabset-dropdown}
+
+&emsp;&emsp;Anosim<sup>[21]</sup>分析是一种非参数检验，用来检验组间的差异是否显著大于组内差异，从而判断分组是否有意义。基于不同物种分类层级的Anosim分析结果如下：
+
+```{r, echo=FALSE, results='asis'}
+
+tax_order <- c("Genus", "Kingdom", "Phylum", "Class", "Order", "Family", "Species")
+contrast_list <- basename(Sys.glob(file.path(params$tax_anosim_dir, "*")))
+sort_contrast_list <- contrast_list[order(lengths(strsplit(contrast_list, "-vs-")))]
+
+for (contrast in sort_contrast_list) {
+  tax_level_list <- gsub(".*\\.", "", gsub(".Anosim.png", "", basename(Sys.glob(file.path(params$tax_anosim_dir, contrast, "*.Anosim.png")))))
+  tax_level_list <- tax_level_list[order(match(tax_level_list, tax_order))]
+  for (tax in tax_level_list){
+    pic <- file.path(params$tax_anosim_dir, contrast, glue("{contrast}.{tax}.Anosim.png"))
+    cat("###### ", contrast, " - ", tax, " \n")
+    cat("\n")
+    cat("![](", pic, "){width=50%}", "\n")
+    cat("<center>**图3.4.4.3-1 物种丰度Anosim分析结果箱型图**</center>", "\n")
+    cat("<center>&nbsp;</center>", "\n")
+    cat("<center>**说明** 横向为分组信息，纵向为距离信息。Between为两组合并信息，between中位线高于另外两组中位线为分组信息较好。R-value介于（-1，1）之间，R-value大于0，说明组内距离小于组间距离；R-value小于0，说明组内距离大于组间距离。统计分析的可信度用 P-value 表示，P< 0.05 表示统计具有显著性。</center>", "\n")
+    cat("<center>&nbsp;<center>", "\n")
+    cat("\n")
+  }
+}
+
+```
+
+##### {- .toc-ignore}
+
+&emsp;&emsp;**结果文件：**
+
+- Anosim分析结果表格：results/04.taxonomic_annotation/Anosim/\*/\*.Anosim.stats.xls；
+- Anosim分析结果箱型图：results/04.taxonomic_annotation/Anosim/\*/\*.\*.Anosim.{pdf,png}。
+
+&nbsp;
+
+#### 3.4.5 组间差异物种分析
+
+##### 3.4.5.1 组间差异物种LEfSe分析
+
+&emsp;&emsp;为了筛选组间具有显著差异的物种Biomarker，首先通过秩和检验的方法检测不同分组间的差异物种并通过LDA（线性判别分析）实现降维并评估差异物种的影响大小，即得到LDA score<sup>[22]</sup>；组间差异物种的LEfSe分析结果包括两部分，分别是LDA值分布柱状图和进化分支图（系统发育分布）。本次LEfSe分析差异筛选阈值：**LDA值 > `r params$tax_lefse_LDA_cutoff`, 检验P值 < `r params$tax_lefse_pvalue_cutoff`**，差异物种的LDA值分布柱状图和进化分支图如下所示：
+
+##### 差异物种LDA值分布柱状图 {.tabset .tabset-dropdown .toc-ignore}
+
+```{r, echo=FALSE, results='asis'}
+
+lefse_contrast_list <- basename(Sys.glob(file.path(params$tax_lefse_dir, "*")))
+
+for (contrast in lefse_contrast_list) {
+  pic <- file.path(params$tax_lefse_dir, contrast, glue("{contrast}.LEfSe.barplot.png"))
+  cat("###### ", contrast, " \n")
+  cat("\n")
+  cat("![](", pic, "){width=60%}", "\n")
+  cat("<center>**图3.4.5.1-1 差异物种LDA值分布图**</center>", "\n")
+  cat("<center>&nbsp;</center>", "\n")
+  cat(glue("<center>**说明**  LDA值分布柱状图中展示了满足LEfSe分析差异筛选阈值的物种，即组间具有统计学差异的Biomarker，柱状图的长度代表差异物种的影响大小（即为 LDA Score）。</center>"), "\n")
+  cat("<center>&nbsp;<center>", "\n")
+  cat("\n")
+}
+
+```
+
+##### {- .toc-ignore}
+
+##### 差异物种进化分支图 {.tabset .tabset-dropdown .toc-ignore}
+
+```{r, echo=FALSE, results='asis'}
+
+lefse_contrast_list <- basename(Sys.glob(file.path(params$tax_lefse_dir, "*")))
+
+for (contrast in lefse_contrast_list) {
+  pic <- file.path(params$tax_lefse_dir, contrast, glue("{contrast}.LEfSe.cladogram.png"))
+  cat("###### ", contrast, " \n")
+  cat("\n")
+  cat("![](", pic, "){width=80%}", "\n")
+  cat("<center>**图3.4.5.1-2 差异物种进化分支图**</center>", "\n")
+  cat("<center>&nbsp;</center>", "\n")
+  cat("<center>**说明** 由内至外辐射的圆圈代表了由门至属（或种）的分类级别。在不同分类级别上的每一个小圆圈代表该水平下的一个分类，小圆圈直径大小与相对丰度大小呈正比。着色原则：无显著差异的物种统一着色为黄色，差异物种Biomarker跟随组进行着色，红色节点表示在红色组别中起到重要作用的微生物类群，绿色节点表示在绿色组别中起到重要作用的微生物类群。图中英文字母表示的物种名称在右侧图例中进行展示。</center>", "\n")
+  cat("<center>&nbsp;<center>", "\n")
+  cat("\n")
+}
+
+```
+
+##### {- .toc-ignore}
+
+&emsp;&emsp;**结果文件：**
+
+- 组间差异物种LEfSe分析结果统计表（所有结果）：results/04.taxonomic_annotation/LEfSe/\*/\*.LEfSe.results.all.xls；
+- 组间差异物种LEfSe分析结果统计表（显著差异结果）：results/04.taxonomic_annotation/LEfSe/\*/\*.LEfSe.results.significant.xls；
+- 组间差异物种LEfSe分析差异物种LDA值分布柱状图：results/04.taxonomic_annotation/LEfSe/\*/\*.LEfSe.barplot.{pdf,png}；
+- 组间差异物种LEfSe分析差异物种进化分支图：results/04.taxonomic_annotation/LEfSe/\*/\*.LEfSe.cladogram.{pdf,png}。

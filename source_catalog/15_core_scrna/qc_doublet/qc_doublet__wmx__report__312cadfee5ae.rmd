@@ -1,0 +1,266 @@
+---
+title: "<center>%ptitle%分析报告</center>"
+author:
+  - name: "<center>杭州广科安德生物科技有限公司</center>"
+date:
+  - "<center>`r Sys.Date()`</center>"
+runtime: static
+output:
+  html_document:
+    keep_md: false
+    toc: yes
+    toc_float: yes
+    theme: paper
+    number_sections: true
+---
+
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, out.width = "90%", message = FALSE, warning = FALSE)
+```
+
+<style type ="text/css">body .main-container {    max-width: 1500px;    margin-left: 100px;    margin-right: 100px;} td { font-size: 15px; text-align: center; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} th { font-size: 15px; text-align: center; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif"; font-weight: 600;} h1 { font-size: 25px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h2 { font-size: 22px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h3 { font-size: 20px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h4 { font-size: 18px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h5 {  line-height: 200%;  text-align: center;  font-weight: 600;  font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} img {    margin-left: auto;    margin-right:auto;    display:block;}p {    line-height: 180%;    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";    text-align: justify;    font-size: 15px;}
+</style>
+
+
+# 项目信息
+
+```{r, layout="l-body-outset"}
+library(kableExtra)
+dt <- data.frame(
+  基本信息 = c('项目编号', '项目名称', '客户单位', '项目联系人', '样本数量'), 
+  项目详情 = c('%pid%', '%ptitle%', '%paddress%', '%pcustmor%', '%num_sample%个'))
+dt %>%
+  kbl(align = "c", booktabs = TRUE) %>% row_spec(0, bold = TRUE, font_size=18, background = '#14B8E5') %>%
+kableExtra::kable_styling(position = "left", latex_options = c("striped", "hold_position"), stripe_color = "gray!6") %>% kable_classic(full_width = T, html_font = "Cambria")
+```
+
+# 技术路线
+
+&emsp;&emsp;本项目是使用BD Biosciences研发BD Rhapsody™单细胞分离捕获系统，以微孔沉降原理为基础来分离捕获单细胞并为其打上条形码。捕获的细胞在该平台系统中，先将 mRNA 的 cDNA 编码于磁珠上，再通过随机引物法直接从磁珠扩增获得全转录组文库，经 PCR 扩增 步骤完成文库构建。最终的全转录组mRNA文库可以在各种测序仪上对进行测序，获得大量单细胞的测序数据。
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('images_dir/BD.png')
+```
+
+# 实验方法与分析流程
+
+## 实验方法
+
+### 单细胞悬液制备
+
+&emsp;&emsp;对单细胞或细胞核悬液使用0.4%台盼蓝或AOPI染色，在显微镜下镜检并统计活率、结团率、背景碎片率、细胞核完整性等，质控合格即可进入建库环节。
+
+### 文库构建
+
+&emsp;&emsp;在通过 BD Rhapsody™ HT 或 HT Xpress 系统捕获单细胞后，细胞会结合到增强型细胞捕获珠上，珠子表面的寡核苷酸可特异性结合 mRNA 的 poly (A) 尾，经逆转录生成 cDNA，再经酶切处理得到携带 cDNA 的捕获珠。捕获珠先经随机引物延伸生成 RPE 产物，再通过纯化去除杂质；接着对 RPE 产物进行 PCR 扩增并纯化，随后通过索引 PCR 添加接头和索引，最后经纯化得到可测序的文库。
+
+### 上机测序
+
+&emsp;&emsp;BD Rhapsody™ WTA 文库适用于Illumina等主流测序平台，该文库推荐测序深度在20k–100k reads/cell。
+
+
+```{r echo=FALSE, fig.align='center', out.height="900vh",out.width="400vh"}
+knitr::include_graphics('images_dir/ScM-Workflow-Expanded.png')
+```
+
+## 生物信息分析
+
+1. 测序完成后，我们使用BD Rhapsody Sequence Analysis Pipeline(https://bd-rhapsody-bioinfo-docs.genomics.bd.com/top_introduction.html) 对原始数据进行数据过滤、比对、定量、鉴定回收细胞，最终得到各细胞的基因表达矩阵。
+
+2. 对上一步得到的单细胞基因表达矩阵，我们使用Scanpy (https://scanpy.readthedocs.io/en/stable/) 进行进一步的细胞过滤、标准化、细胞亚群分类、各亚群差异表达基因分析及Marker基因筛选。
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('images_dir/10x_analysis.png')
+```
+
+
+# 分析结果
+
+## 细胞鉴定结果
+
+&emsp;&emsp;本次实验共上机%num_sample%个%organism%的样本，经过数据分析，共得到%cell_num_raw%个细胞，细胞过滤后，一共得到%cell_num_after_filter%个高质量细胞。经过聚类分析，共得到%cluster_num%个细胞cluster，对cluster进行细胞类型初步注释，得到的细胞类型包括%cell_types%等。
+
+## 细胞亚群鉴定
+
+利用BD Rhapsody对测序数据进行比对及定量，后续利用Scanpy软件做进一步分析，主要包括细胞过滤、数据标准化处理、批次效应校正、PCA（Principal Component Analysis）分析、t-SNE（t-Distributed Stochastic Neighbor Embedding）分析、UMAP（Uniform Manifold Approximation and Projection）分析、细胞聚类、marker gene分析、细胞注释等。
+
+### 细胞过滤 {.tabset .tabset-fade .tabset-pills}
+
+虽然单细胞转录组测序采用的是barcode 以及UMI 序列信息去标记细胞和转录本信息，但也有可能会出现带有这些标记信息的凝胶珠中没有细胞或者细胞数目不止一个的情况；并且当细胞发生死亡或者裂解时，细胞中将含有大量的线粒体基因，因此需要根据细胞的UMI总数、线粒体基因比例及单个细胞鉴定到的基因数目3个指标进行高质量细胞筛选，本项目过滤参数设置为：
+
+(1) 线粒体基因比例(%)：≤ 20，一般认为细胞发生凋亡、破裂会导致线粒体基因偏高，因此需要过滤掉线粒体基因比例过高的细胞；
+
+(2) 单个细胞鉴定到的UMI数目：≥ 100，对单个细胞检出的转录本数目进行过滤；
+
+(3) 单个细胞鉴定到的基因数目：500 ~ 7000，正常情况下一个细胞表达的基因数目处于一定范围内，因此利用基因数目可以判断GEMs油滴中是否包含1个以上细胞、或者细胞是否发生破裂。
+
+同时也会对检出不可信的基因进行过滤，某个基因表达至少在10个细胞中检测到才会被认为是可信检出。
+
+统计过滤前后各个样本细胞的nGene（number of Gene），nUMI（number of UMI）和percent.mt（线粒体基因）占比，结果如下图所示：
+
+#### 细胞过滤前各样本统计
+
+```{r out.width="100%"}
+knitr::include_graphics("02-Data_QC/orig_nCount_nFeature_voilon.png")
+```
+注：每个点表示一个细胞。nGene图：过滤前各个样本单个细胞中检测到的基因数量分布情况；nUMI图：过滤前各个样本单个细胞中检测到的nUMI分布情况；percent.mt图：过滤前各个样本单个细胞中线粒体基因表达量的百分比分布情况。
+
+```{r out.width="100%"}
+knitr::include_graphics("02-Data_QC/orig_nCount_nFeature_scatter.png")
+```
+注：每个点表示一个细胞，图上方为相关性系数。左图表示细胞中检测到的UMI数目和线粒体基因含量的关系；右图表示细胞中检测到的UMI数目和表达基因数目的关系。
+
+
+#### 细胞过滤后各样本统计
+
+```{r out.width="100%"}
+knitr::include_graphics("03-Cell_filter/filtered_nCount_nFeature_voilon.png")
+```
+注：每个点表示一个细胞。nGene图：过滤前各个样本单个细胞中检测到的基因数量分布情况；nUMI图：过滤前各个样本单个细胞中检测到的nUMI分布情况；percent.mt图：过滤前各个样本单个细胞中线粒体基因表达量的百分比分布情况。
+
+```{r out.width="100%"}
+knitr::include_graphics("03-Cell_filter/filtered_nCount_nFeature_scatter.png")
+```
+注：每个点表示一个细胞，图上方为相关性系数。左图表示细胞中检测到的UMI数目和线粒体基因含量的关系；右图表示细胞中检测到的UMI数目和表达基因数目的关系。
+
+### 降维与聚类
+
+经过过滤之后的表达矩阵，使用Scanpy 进行降维聚类分析：
+
+&emsp;&emsp;1）首先进行数据的表达量均一化，对测序深度进行校正，消除技术噪音；
+
+&emsp;&emsp;2）然后选取高可变基因（细胞间高特征基因），用于提高细胞分群准确度（默认值为2000）；
+
+&emsp;&emsp;3）多个样本需要对数据合并后再进行后续分析，可以选择是否去除批次效应，来处理样品在不同批次中产生的与生物复杂性无关的差异，我们使用BBKNN(Batch Balanced K Nearest Neighbours)算法修正批次效应，从而实现不同单细胞数据集的整合；
+
+&emsp;&emsp;4）进一步对表达量值均一化处理后，利用PCA分析对数据进行降维，PCA降维是一种线性降维方法，运用方差分解，将高维的数据映射到低维的空间中；然后基于SNN聚类算法对细胞进行聚类和分群，构建细胞间的聚类关系；
+
+&emsp;&emsp;5）最后将降维后的数据传递到t-SNE与UMAP进行可视化展示，细胞之间的基因表达模式越相似，在t-SNE/UMAP图中的距离也越接近。
+
+### 聚类结果可视化
+
+&emsp;&emsp;降维完成后，我们基于图的聚类方法，将细胞嵌入图后使用K-近邻方法在表达相似的细胞之间画出边缘，从而将这个图分割成高度关联的类别。我们利用UMAP对聚类得到的结果进行可视化展示，UMAP的核心思想是在衡量高维空间中点的相似性后在低维空间中对数据进行排序。但是UMAP是构建数据的高维图，然后在低维图表示时尽可能保留高维空间中的相似性。与tSNE相比UMAP可以更清楚地将组彼此分开。所有cluster的UMAP图，不同颜色表示不同的cluster，结果如下：
+
+```{r out.width="70%"}
+knitr::include_graphics("04-Dimension_reduction_cluster/umap_dimplot.png")
+```
+
+## 特征基因分析 {.tabset .tabset-fade .tabset-pills}
+
+通过上述聚类分析，已经将细胞区分成了不同的cluster。根据每个cluster中的基因表达情况，可以鉴定某个cluster和其他cluster之间的差异表达基因，从而确定不同cluster特征性表达基因（marker基因）。 基于降维聚类得到的结果，利用Scanpy的非参数检验方法（wilcox秩和检验），将cluster0的细胞与其余cluster的细胞进行差异表达分析，以此类推， 鉴定每个cluster中显著差异表达的marker基因，默认筛选标准为logFC>1 且Thred < 0.05（parameter is: FDR）,结果见附件: 05-Marker_gene_analysis/
+
+### Top3特征基因dot plot
+
+```{r out.width="70%"}
+knitr::include_graphics("05-Marker_gene_analysis/dotplot_top3_marker_gene.png")
+```
+
+### top10特征基因heatmap
+
+```{r out.width="70%"}
+knitr::include_graphics("05-Marker_gene_analysis/heatmap_top10_marker_gene.png")
+```
+
+### Cluster0 top5特征基因小提琴图
+
+```{r out.width="70%"}
+knitr::include_graphics("05-Marker_gene_analysis/cluster0/top_5_genes_violin.png")
+```
+
+### Cluster0 特征基因列表
+
+```{r echo=FALSE}
+library(DT)
+data <- read.table('05-Marker_gene_analysis/cluster0/differentially_expressed_genes.xls', sep = '\t', header = TRUE, check.names = FALSE)
+datatable(data,
+          extensions = 'Buttons', options = list(
+            dom = 'Bfrtip',
+            buttons = c('copy','excel', 'pdf')
+          )
+)
+```
+
+
+## 细胞亚群注释
+
+&emsp;&emsp;通过差异基因分析以及Marker 基因鉴定，我们可以确定每个细胞群中的真实细胞类型。目前，细胞类型鉴定主要有两种方法，一种是基于已有细胞类型的Marker 基因，通过软件或者人为鉴定这些特定Marker 所对应的细胞类型，即主要有监督和半监督这两种方式；另一种是基于现有表达谱参考数据集，基于相似性通过非监督的方式鉴定细胞类型。这两种方法各有优劣。前者人为干扰因素较多且可能对现有Marker 过于依赖。后者基于参考数据集进行鉴定，可有效避免人为干扰，但是也受制于参考数据集中的现有数据，只能鉴定到大类。目前的经验方法是，结合两种方法进行鉴定细胞类型，使细胞类群鉴定结果更可靠。(基于PanglaoDB数据库https://panglaodb.se/进行自动化注释结果如下)
+
+
+### 细胞类型注释
+
+```{r out.width="70%"}
+knitr::include_graphics("06-Cell_type_annotation/umap_dimplot_celltype.png")
+```
+
+注：细胞类型鉴定的过程即复杂又繁琐，自动注释只能提供一个参考，细胞注释要同时结合自动化注释和人工注释，这两种方法并不是独立割裂开来的，需要搭配使用，软件自动化细胞注释方法方便且系统化，完全依赖于参考数据集，注释的结果有时也并不是高置信度注释。在我们提供的数据库自动注释的基础上，后续可根据已发表的文章（物种、疾病、组织检索）或者 cell marker 等数据库进行进一步的人工注释校正，可大大提高注释的准确度。
+
+### 各样本分组鉴定细胞类型统计
+
+```{r out.width="70%"}
+knitr::include_graphics("06-Cell_type_annotation/celltype_proportion_sample.png")
+```
+
+# 个性化分析推荐
+
+## 拟时序分析
+
+时间序列（Pseudotime）简称拟时序，是一种用于模拟细胞之间发育过程的方法，它是对一个生物学过程的抽象，描述了一个细胞当前状态和时间轨迹的起始状态之间的最短路径的距离。在细胞分裂发育过程中，假设该过程产生的蛋白和代谢物是动态保守的，那么我们可以利用该连续发生的状态转换来模拟细胞动态变化的过程，即重建了分化轨迹。
+
+```{r out.width="70%"}
+knitr::include_graphics("images_dir/pseudotime_trajectory_plot.svg")
+```
+
+注：该分析适用于已知存在连续分化过程的样本，如骨髓中存在着从干细胞到成熟细胞的分化过程，因此适用于拟时序分析。但是分化成熟的样本，如PBMC样本则不适合使用拟时序分析。
+
+## 细胞通讯分析
+
+多细胞生物的细胞与细胞之间往往会通过细胞因子和膜蛋白等进行通讯，从而调节生命活动，保证生命体高效、有序的运作。其中，受体-配体介导的细胞间通讯对协调发育、分化和疾病等多种生物学过程至关重要。细胞通讯分析通过统计不同细胞类型中受体和配体的表达及配对情况，推断不同细胞之间的相互作用。CellPhoneDB主要通过一种细胞类型的受体和另一种细胞类型的配体的表达信息，得到不同细胞类型之间的相互作用。CellPhoneDB不仅包含了数据库注释的受体和配体，还提供了人工注释的参与细胞通讯的蛋白质家族，提供受体和配体的亚基结构。可以对细胞间的通讯分子进行全面、系统的分析。
+
+```{r out.width="70%"}
+knitr::include_graphics("images_dir/CellPhoneDB.PNG")
+```
+
+## 肿瘤拷贝数变异分析
+
+拷贝数变异(Copy number variation, CNV)是由基因组发生重排而导致的，基因组大片段的拷贝数增加或者减少，基因组结构变异(Structural variation, SV) 的重要组成部分，也是人类疾病的重要致病因素之一。与正常细胞相比，肿瘤基因组部分区域呈现过表达或低表达状态，通过与一组参考的“正常”细胞相比，探索肿瘤基因组位置上基因的表达强度，最终反映基因大片段区域的CNV事件。利用inferCNV进行单细胞转录组CNV分析，通过比较不同样本间或不同细胞类型之间的CNV基因表达差异，主要分析肿瘤细胞的CNV，鉴定体细胞整个染色体或大片段染色体的扩增或缺失。
+
+```{r out.width="70%"}
+knitr::include_graphics("images_dir/infercnv.png")
+```
+
+## GSVA
+
+GSVA(Gene Set Variation Analysis，基因集变异分析)通过对样本进行无监督分类，将基因在不同样品间的表达量矩阵转化成基因集在样品间的表达量矩阵，从而来评估不同的代谢通路在不同样品间是否富集。GSEA分析主要用于两两组间比较的方案设计中，对于分组比较复杂的方案设计则比较适合GSVA分析，GSVA不需要预先进行样本之间的差异分析，依据表达矩阵就可以计算每个样本中特定基因集的变异分数。
+
+```{r out.width="50%"}
+knitr::include_graphics("images_dir/gsva.png")
+```
+
+
+
+# 参考文献
+
+[1] BD Rhapsody：https://bd-rhapsody-bioinfo-docs.genomics.bd.com/top_introduction.html.
+
+[2] Scanpy：Wolf, F. A. ,  P. Angerer , and  F. J. Theis . "Scanpy for analysis of large-scale single-cell gene expression data." Cold Spring Harbor Laboratory 1(2017).
+
+[3] bimod：Mcdavid A , Finak G , Chattopadyay P K , et al. Data Exploration, Quality Control and Testing in Single-Cell qPCR-Based Gene Expression Experiments[J]. Bioinformatics, 2013, 29(4):461-467.
+
+[4] t-SNE：Maaten L V D, Hinton G. Visualizing Data using t-SNE[J]. Journal of Machine Learning Research, 2008, 9(2605):2579-2605.
+
+[5] Kanehisa, M., M. Araki, et al. (2008). KEGG for linking genomes to life and the environment. Nucleic acids research.(KEGG)
+
+[6] Zheng G X, Terry J M, Belgrader P, et al. Massively parallel digital transcriptional profiling of single cells[J]. Nature Communications, 2017, 8:14049.
+
+
+
+
+
+
+
+
+
+
+
+

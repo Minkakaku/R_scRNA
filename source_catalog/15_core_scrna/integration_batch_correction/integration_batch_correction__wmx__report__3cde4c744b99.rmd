@@ -1,0 +1,161 @@
+---
+title: "<center>SC2511056265-DNFB1分析报告</center>"
+author:
+  - name: "<center>杭州广科安德生物科技有限公司</center>"
+date:
+  - "<center>`r Sys.Date()`</center>"
+runtime: static
+output:
+  html_document:
+    keep_md: false
+    toc: yes
+    toc_float: yes
+    theme: paper
+    number_sections: true
+---
+
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, out.width = "90%", message = FALSE, warning = FALSE)
+```
+
+<style type ="text/css">body .main-container {    max-width: 1500px;    margin-left: 100px;    margin-right: 100px;} td { font-size: 15px; text-align: center; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} th { font-size: 15px; text-align: center; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif"; font-weight: 600;} h1 { font-size: 25px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h2 { font-size: 22px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h3 { font-size: 20px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h4 { font-size: 18px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h5 {  line-height: 200%;  text-align: center;  font-weight: 600;  font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} img {    margin-left: auto;    margin-right:auto;    display:block;}p {    line-height: 180%;    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";    text-align: justify;    font-size: 15px;}
+</style>
+
+
+# 项目信息
+
+```{r, layout="l-body-outset"}
+library(kableExtra)
+dt <- data.frame(
+  基本信息 = c('项目编号','客户单位', '项目联系人', '样本名称'), 
+  项目详情 = c('SC2511056265',  '长春中医药大学', '王晶', 'DNFB1'))
+dt %>%
+  kbl(align = "c", booktabs = TRUE) %>% row_spec(0, bold = TRUE, font_size=18, background = '#14B8E5') %>%
+kableExtra::kable_styling(position = "left", latex_options = c("striped", "hold_position"), stripe_color = "gray!6") %>% kable_classic(full_width = T, html_font = "Cambria")
+```
+<span style="font-size: 25px; color:red; font-weight:bold">声明：</span>
+
+&emsp;&emsp;<span style="font-size: 18px; color:black; font-weight: bold"> 本报告基于广科安德自动化平台对样本进行系统采样（n=2000），采用智能识别技术完成细胞类型初步判定。鉴于自动化分析的局限性，部分细胞分类结果可能存在一定偏差。如需获取更深入的分析结论，建议联系我司技术团队安排人工复核及多维度验证分析。</span>
+
+# 技术路线
+
+&emsp;&emsp;本项目是使用 BD Biosciences 研发的 BD Rhapsody™ 单细胞分离捕获系统，以微孔沉降原理为基础来分离捕获单细胞并为其打上条形码。捕获的细胞在该平台系统中，先将 mRNA 的 cDNA 编码于磁珠上，再通过随机引物法直接从磁珠扩增获得全转录组文库，经 PCR 扩增步骤完成文库构建。最终的全转录组 mRNA 文库可以在各种测序仪上对其进行测序，获得大量单细胞的测序数据。
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('/mnt/NexData_file/share/scRNA_platform/scVision5/moudle/template/BD/images/BD.png')
+```
+
+# 实验方法与分析流程
+
+## 实验方法
+
+### 单细胞悬液制备
+
+&emsp;&emsp;对单细胞或细胞核悬液使用 0.4% 台盼蓝或 AOPI 染色，在显微镜下镜检并统计活率、结团率、背景碎片率、细胞核完整性等，质控合格即可进入建库环节。
+
+### 文库构建
+
+&emsp;&emsp;在通过 BD Rhapsody™ HT 或 HT Xpress 系统捕获单细胞后，细胞会结合到增强型细胞捕获珠上，珠子表面的寡核苷酸可特异性结合 mRNA 的 poly (A) 尾，经逆转录生成 cDNA，再经酶切处理得到携带 cDNA 的捕获珠；捕获珠先经随机引物延伸生成 RPE 产物，再通过纯化去除杂质；接着对 RPE 产物进行 PCR 扩增并纯化，随后通过索引 PCR 添加接头和索引，最后经纯化得到可测序的文库。
+
+### 上机测序
+
+&emsp;&emsp;BD Rhapsody™ WTA 文库适用于 Illumina 等主流测序平台，该文库推荐测序深度在 20k – 100k reads/cell。
+
+
+```{r echo=FALSE, fig.align='center', out.height="900vh",out.width="400vh"}
+knitr::include_graphics('/mnt/NexData_file/share/scRNA_platform/scVision5/moudle/template/BD/images/ScM-Workflow-Expanded.png')
+```
+
+## 生物信息分析
+
+1. 测序完成后，我们使用 BD Rhapsody Sequence Analysis Pipeline (https://bd-rhapsody-bioinfo-docs.genomics.bd.com/top_introduction.html) 对原始数据进行数据过滤、比对、定量、鉴定回收细胞，最终得到各细胞的基因表达矩阵。
+
+2. 对上一步得到的单细胞基因表达矩阵，我们随机抽取2000个细胞，使用 Scanpy (https://scanpy.readthedocs.io/en/stable/) 进行标准化、细胞亚群分类、各亚群差异表达基因分析及 Marker 基因筛选,并使用 PanglaoDB 数据库进行细胞类型注释。
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('/mnt/NexData_file/share/scRNA_platform/scVision5/moudle/template/10X/images/10x_analysis.png')
+```
+
+# 分析结果
+
+## 细胞亚群鉴定
+
+&emsp;&emsp;利用BD Rhapsody对测序数据进行比对及定量，后续利用Scanpy软件做进一步分析，主要包括细胞过滤、数据标准化处理、批次效应校正、PCA（Principal Component Analysis）分析、t-SNE（t-Distributed Stochastic Neighbor Embedding）分析、UMAP（Uniform Manifold Approximation and Projection）分析、细胞聚类、marker gene分析、细胞注释等。
+
+### 降维与聚类
+
+对过滤后的表达矩阵，使用Scanpy进行降维聚类分析：
+
+&emsp;&emsp;1）首先进行数据的表达量均一化，对测序深度进行校正，消除技术噪音；
+
+&emsp;&emsp;2）然后选取高可变基因（细胞间高特征基因），用于提高细胞分群准确度（默认值为 2000）；
+
+&emsp;&emsp;3）接着利用 PCA 分析对上一步的数据进行降维，PCA 降维是一种线性降维方法，运用方差分解将高维数据映射到低维空间中，然后基于 SNN 聚类算法对细胞进行聚类和分群，构建细胞间的聚类关系；
+
+&emsp;&emsp;4）最后将降维后的数据传递到 UMAP 进行可视化展示，细胞之间的基因表达模式越相似，在 UMAP 图中的距离也越接近。
+
+### 聚类结果可视化
+
+&emsp;&emsp;降维分析完成后，我们采用基于图的聚类方法对细胞进行分群，首先将细胞嵌入图结构，随后通过 K-近邻算法（K-Nearest Neighbors, KNN）在基因表达相似的细胞间建立连接边，最终将全局图结构划分为若干高度互联的子图类别，从而实现细胞群体的划分。为直观展示聚类结果，我们利用 UMAP 进行可视化呈现，UMAP 的核心思想是在衡量高维空间中点的相似性后在低维空间中对数据进行排序。UMAP 首先构建数据的高维图结构，继而在低维表示中尽可能保持高维空间的相似性，与 t-SNE 相比，UMAP 够更清晰地实现不同类别间的分离。在所有 cluster 的 UMAP 图中，不同颜色表示不同的 cluster，结果如下：
+
+```{r out.width="70%"}
+knitr::include_graphics("umap_dimplot_cluster.png")
+```
+
+## 特征基因分析 {.tabset .tabset-fade .tabset-pills}
+
+&emsp;&emsp;通过上述聚类分析，已经将细胞区分成了不同的 cluster。根据每个 cluster 中的基因表达情况，可以鉴定某个 cluster 和其他 cluster 之间的差异表达基因，从而确定不同 cluster 的特征性表达基因（Marker 基因）。基于降维聚类得到的结果，利用 Scanpy 的非参数检验方法（wilcox 秩和检验），将 cluster0 的细胞与其余 cluster 的细胞进行差异表达分析，以此类推，鉴定每个 cluster 中显著差异表达的 Marker 基因，默认筛选标准为 logFC > 1且 Thred < 0.05（parameter is: FDR），每个 clusterTop3 特征基因如下：
+
+### Top3特征基因dot plot
+
+```{r out.width="70%"}
+knitr::include_graphics("dotplot_top3_marker_gene.png")
+```
+
+## 细胞亚群注释
+
+&emsp;&emsp;目前，细胞类型鉴定主要有两种方法，一种是基于已有细胞类型的 Marker 基因，通过软件或者人为鉴定这些特定 Marker 所对应的细胞类型，即有监督和半监督这两种方式；另一种是基于现有表达谱参考数据集，基于相似性通过非监督的方式鉴定细胞类型。这两种方法各有优劣，前者人为干扰因素较多且可能对现有 Marker 过于依赖；后者基于参考数据集进行鉴定，可有效避免人为干扰，但是也受制于参考数据集中的现有数据，只能鉴定到大类。目前的经验方法是：结合两种方法鉴定细胞类型，使细胞类群鉴定结果更可靠。（基于 PanglaoDB 数据库 https://panglaodb.se/ 进行自动化注释结果如下）
+
+
+### 细胞类型注释
+
+```{r out.width="70%"}
+knitr::include_graphics("umap_dimplot_celltype.png")
+```
+
+注：细胞类型鉴定的过程即复杂又繁琐，自动注释只能提供一个参考，细胞注释要同时结合自动化注释和人工注释，这两种方法并不是独立割裂开来的，需要搭配使用，软件自动化细胞注释方便且系统化，完全依赖于参考数据集，注释的结果有时也并不是高置信度注释。在我们提供的数据库自动注释的基础上，后续可根据已发表的文章（物种、疾病、组织检索）或 cell marker 等数据库进行进一步的人工注释校正，可大大提高注释的准确度。
+
+### 鉴定细胞类型统计
+
+```{r out.width="70%"}
+knitr::include_graphics("celltype_proportion_sample.png")
+```
+
+
+
+# 参考文献
+
+[1] BD Rhapsody：https://bd-rhapsody-bioinfo-docs.genomics.bd.com/top_introduction.html.
+
+[2] Scanpy：Wolf, F. A. ,  P. Angerer , and  F. J. Theis . "Scanpy for analysis of large-scale single-cell gene expression data." Cold Spring Harbor Laboratory 1(2017).
+
+[3] bimod：Mcdavid A , Finak G , Chattopadyay P K , et al. Data Exploration, Quality Control and Testing in Single-Cell qPCR-Based Gene Expression Experiments[J]. Bioinformatics, 2013, 29(4):461-467.
+
+[4] t-SNE：Maaten L V D, Hinton G. Visualizing Data using t-SNE[J]. Journal of Machine Learning Research, 2008, 9(2605):2579-2605.
+
+[5] Kanehisa, M., M. Araki, et al. (2008). KEGG for linking genomes to life and the environment. Nucleic acids research.(KEGG)
+
+[6] Zheng G X, Terry J M, Belgrader P, et al. Massively parallel digital transcriptional profiling of single cells[J]. Nature Communications, 2017, 8:14049.
+
+
+
+
+
+
+
+
+
+
+
+

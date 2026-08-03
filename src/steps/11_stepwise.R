@@ -21,7 +21,7 @@ normalize_global_01_preprocess_pca <- function(project = PROJECT, route = NORMAL
 
   pca_settings <- valid_cluster_dims(sc, CLUSTER$npcs, CLUSTER$dims)
   sc <- run_step("Stepwise global NormalizeData RunPCA", RunPCA(sc, npcs = pca_settings$npcs, verbose = FALSE))
-  save_plot(ElbowPlot(sc, ndims = pca_settings$npcs), stepwise_fig("normalize_global_PCA_elbow"))
+  save_pca_elbow(sc, stepwise_fig("normalize_global_PCA_elbow"))
   save_qs2(sc, stepwise_rds("normalize_global_01_preprocess_pca"))
 }
 
@@ -50,7 +50,7 @@ sct_global_01_integrate_pca <- function(project = PROJECT, route = SCT_ROUTE) {
 
   pca_settings <- valid_cluster_dims(sc, CLUSTER$npcs, CLUSTER$dims)
   sc <- run_step("Stepwise global SCT RunPCA", RunPCA(sc, npcs = pca_settings$npcs, verbose = FALSE))
-  save_plot(ElbowPlot(sc, ndims = pca_settings$npcs), stepwise_fig("sct_global_PCA_elbow"))
+  save_pca_elbow(sc, stepwise_fig("sct_global_PCA_elbow"))
   save_qs2(sc, stepwise_rds("sct_global_01_integrate_pca"))
 }
 
@@ -80,7 +80,7 @@ normalize_subcluster_01_preprocess_pca <- function(project = PROJECT, route = NO
 
   pca_settings <- valid_cluster_dims(obj, SUBCLUSTER$npcs, SUBCLUSTER$dims)
   obj <- run_step("Stepwise subcluster NormalizeData RunPCA", RunPCA(obj, npcs = pca_settings$npcs, verbose = FALSE))
-  save_plot(ElbowPlot(obj, ndims = pca_settings$npcs), stepwise_fig("normalize_subcluster_PCA_elbow"))
+  save_pca_elbow(obj, stepwise_fig("normalize_subcluster_PCA_elbow"))
   save_qs2(obj, stepwise_rds("normalize_subcluster_01_preprocess_pca"))
 }
 
@@ -113,7 +113,7 @@ sct_subcluster_01_integrate_pca <- function(project = PROJECT, route = SCT_ROUTE
 
   pca_settings <- valid_cluster_dims(obj, SUBCLUSTER$npcs, SUBCLUSTER$dims)
   obj <- run_step("Stepwise subcluster SCT RunPCA", RunPCA(obj, npcs = pca_settings$npcs, verbose = FALSE))
-  save_plot(ElbowPlot(obj, ndims = pca_settings$npcs), stepwise_fig("sct_subcluster_PCA_elbow"))
+  save_pca_elbow(obj, stepwise_fig("sct_subcluster_PCA_elbow"))
   save_qs2(obj, stepwise_rds("sct_subcluster_01_integrate_pca"))
 }
 

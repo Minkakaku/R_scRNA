@@ -1,4 +1,4 @@
-# 单细胞 RNA-seq 分析项目模板
+# R-scrna-workflow-template
 
 这是从实际项目中整理出的 Seurat 单细胞分析代码模板。仓库只保存可复用代码和项目配置框架，不保存原始数据、运行结果或某个项目的临时分析。
 
@@ -69,6 +69,12 @@ conda activate scrna-workflow
 
 代码以 Seurat 5 为主要运行环境；Harmony 和 ggalluvial 仅在对应方法启用时需要。
 
+PCA 完成后会自动使用 `PCAtools::findElbowPoint()`、`nFactors::nScree()` 计算推荐 PC 数，输出带标线的 PNG/PDF、逐 PC 方差表和三种方法的选择结果。自动拐点作为聚类维度参考，不会覆盖 `config/config.R` 中的 `CLUSTER$dims` 或 `SUBCLUSTER$dims`。
+
 ## 发布前
 
 本仓库没有替你选择开源许可证。公开发布前，请根据代码复用范围补充合适的 `LICENSE`。
+
+## 其他人员来源代码
+
+`source_catalog/` 收录 609 份 R/R Markdown/Shell 语义副本，覆盖 doublet/QC、聚类注释和核心单细胞流程。`SOURCE_CATALOG.tsv` 用于按场景、角色、owner 和 SHA-256 选择历史实现。正式分析继续优先使用本模板 `src/`；不要把来源脚本中的项目路径、固定注释或运行记录直接复制进可复用函数。

@@ -158,7 +158,7 @@ step_global_recluster <- function() {
   sc@graphs <- list()
 
   sc <- run_step("RunPCA", RunPCA(sc, npcs = CLUSTER$npcs, verbose = FALSE))
-  save_plot(ElbowPlot(sc, ndims = CLUSTER$npcs), file.path(GLOBAL_DIR, "PCA_elbow"))
+  save_pca_elbow(sc, file.path(GLOBAL_DIR, "PCA_elbow"))
   sc <- run_before_batch_umap(sc, CLUSTER$dims)
   corrected <- run_batch_correction(sc, CLUSTER, NORMALIZE, "Global")
   sc <- run_graph_cluster_umap(

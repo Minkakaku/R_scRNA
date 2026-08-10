@@ -1,0 +1,231 @@
+---
+title: "<center>%ptitle%分析报告</center>"
+author:
+  - name: "<center>杭州广科安德生物科技有限公司</center>"
+date:
+  - "<center>`r Sys.Date()`</center>"
+runtime: static
+output:
+  html_document:
+    keep_md: false
+    toc: yes
+    toc_float: yes
+    theme: paper
+    number_sections: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, out.width = "90%", message = FALSE, warning = FALSE)
+```
+
+<style type ="text/css">body .main-container {    max-width: 1500px;    margin-left: 100px;    margin-right: 100px;} td { font-size: 15px; text-align: center; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} th { font-size: 15px; text-align: center; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif"; font-weight: 600;} h1 { font-size: 25px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h2 { font-size: 22px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h3 { font-size: 20px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h4 { font-size: 18px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h5 {  line-height: 200%;  text-align: center;  font-weight: 600;  font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} img {    margin-left: auto;    margin-right:auto;    display:block;}p {    line-height: 180%;    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";    text-align: justify;    font-size: 15px;}
+</style>
+
+
+# 项目信息
+
+```{r, layout="l-body-outset"}
+library(kableExtra)
+dt <- data.frame(
+  基本信息 = c('项目编号', '项目名称', '客户单位', '项目联系人', '样本数量'), 
+  项目详情 = c('%pid%', '%ptitle%', '%paddress%', '%pcustmor%', '%psample%'))
+dt %>%
+  kbl(align = "c", booktabs = TRUE) %>% row_spec(0, bold = TRUE, font_size=18, background = '#14B8E5') %>%
+kableExtra::kable_styling(position = "left", latex_options = c("striped", "hold_position"), stripe_color = "gray!6") %>% kable_classic(full_width = T, html_font = "Cambria")
+```
+
+# 技术路线
+
+&emsp;&emsp;本项目基于华大DNBelab C4，使用液滴微流控技术，将单个细胞和大小磁珠包裹在液滴中；在液滴内细胞裂解，大磁珠表面有长短两种捕获序列，
+长捕获序列捕获mRNA，短捕获序列捕获小磁珠释放序列。小磁珠的不同序列组成用于矫正多个大磁珠进入同一液滴带来的偏差，大小磁珠的联合应用能够提升细胞捕获效率，提高数据准确性。
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('/mnt/NexData_file/share/scRNA_platform/sc_C4/moudle/template/images/10x_summary.png')
+```
+
+# 实验方法与分析流程
+
+## 实验方法
+
+### 单细胞悬液制备及质控
+
+&emsp;&emsp;对单细胞或细胞核悬液使用0.4%台盼蓝或AOPI染色，在显微镜下镜检并统计活率、结团率、背景碎片率、细胞核完整性等，质控合格即可进入建库环节。
+
+### 文库构建
+
+&emsp;&emsp;将单细胞悬液，油，beads加入scRNA载片，通过DNBelab C-TaiM 4单细胞液滴生成仪生成油包水的液滴，在液滴内完成细胞裂解和磁珠捕获mRNA的过程并反转录生成cDNA。
+
+&emsp;&emsp;向cDNA中加入破乳试剂，室温反应后离心，吸出产物，通过磁珠筛选区分cDNA和Oligo产物。
+
+&emsp;&emsp;对cDNA产物进行扩增和纯化，质检其浓度和片段分布，随后进行cDNA产物的片段化、末端修复及加"A"、接头连接、PCR扩增并进一步纯化；对Oligo产物进行扩增、加index并纯化。
+
+&emsp;&emsp;将cDNA产物和Oligo产物变性为单链后，分别进行环化得到单链环形产物，并消化掉未被环化的线性DNA分子；单链环状DNA分子通过滚环复制，形成包含多个拷贝的DNA纳米球(DNB)，将DNBs采用高密度DNA纳米芯片技术，加到芯片上的网状小孔内。
+
+### 上机测序
+
+&emsp;&emsp;采用DNBSEQ平台，通过联合探针锚定聚合技术(cPAS)进行测序。
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('/mnt/NexData_file/share/scRNA_platform/sc_C4/moudle/template/images/10x_experiment.png')
+```
+
+## 生物信息分析
+
+1. 测序完成后，根据TaiM4 scRNA-Seq独特的文库结构，使用dnbc4tools（2.1.3）[1]进行质控，并对reads的Barcode ， UMI进行拆分，使用STAR软件(https://github.com/alexdobin/STAR) 对原始数据进行数据比对。 随后对基因表达进行定量统计得到表达矩阵。
+
+2. 对上一步得到的单细胞基因表达矩阵，我们随机抽取2000细胞，使用Scanpy (https://scanpy.readthedocs.io/en/stable/) 进行标准化、细胞亚群分类、各亚群差异表达基因分析及Marker基因筛选,并使用PanglaoDB数据库进行细胞类型注释。
+
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('/mnt/NexData_file/share/scRNA_platform/scVision5/moudle/template/10X/images/10x_analysis.png')
+```
+
+# 分析结果
+
+## 测序数据统计
+
+&emsp;&emsp;测序数据质量统计，如下表：
+
+```{r, layout="l-body-outset"}
+library(kableExtra)
+
+data <- read.csv('metrics_summary.xls', header=TRUE, sep = "\t", check.names = FALSE)
+data <- data[,c('SampleName', 'cDNA Number of reads', 'index Number of reads','Sequencing saturation',  'index Q30 bases in reads', 'cDNA Q30 bases in reads')]
+
+data %>%
+  kbl(align = "c", booktabs = TRUE) %>% row_spec(0, bold = TRUE, font_size=12, background = '#14B8E5', align = "c") %>%
+kableExtra::kable_styling(position = "left", latex_options = c("striped", "hold_position"), stripe_color = "gray!6") %>% kable_classic(full_width = T, html_font = "Cambria")
+```
+
+注:
+**SampleName:** 样本名称；
+**cDNA Number of reads:** reads总数；
+**index Number of reads:** 有效的 Barcode总数；
+**Sequencing saturation:** 测序饱和度；
+**index Q30 bases in reads:** Barcode序列中质量值大于或等于30的碱基所占的百分比；
+**cDNA Q30 bases in reads:** Reads中质量值大于或等于30的碱基所占的百分比；
+
+## 基因组比对情况统计
+
+&emsp;&emsp;调用STAR软件将Read2比对到参考基因组上，基于STAR的比对结果，结合参考基因组注释信息，统计基因组上各个区域的reads覆盖信息，可以得到比对到外显子、内含子、基因间区的比例信息。数据比对结果统计如下表：
+
+```{r, layout="l-body-outset"}
+library(kableExtra)
+
+data <- read.csv('metrics_summary.xls', header=TRUE, sep = "\t", check.names = FALSE)
+data <- data[,c('SampleName', 'Reads mapped to genome','Reads mapped to exonic regions','Reads mapped to intronic regions', 'Reads mapped to intergenic regions')]
+
+data %>%
+  kbl(align = "c", booktabs = TRUE) %>% row_spec(0, bold = TRUE, font_size=12, background = '#14B8E5', align = "c") %>%
+kableExtra::kable_styling(position = "left", latex_options = c("striped", "hold_position"), stripe_color = "gray!6") %>% kable_classic(full_width = T, html_font = "Cambria")
+```
+
+注:
+**SampleName:** 样本名称；
+**Reads Mapped to Genome:** 总比对率；
+**Reads mapped to exonic regions:** 外显子区域比对率；
+**Reads mapped to intronic regions:** 内含子区域比对率；
+**Reads mapped to intergenic regions** 基因间区域比对率；
+
+## 细胞基因定量情况统计
+
+&emsp;&emsp;统计每个Barcode的总UMI数，将UMI数较高的Barcode识别为高质量的细胞，UMI数较低的Barcode识别为背景噪音，同时对每个Barcode的每个基因会去除重复的UMI，统计unique UMI数目作为该细胞内该基因的表达量，最终生成gene-barcode矩阵。
+
+```{r, layout="l-body-outset"}
+library(kableExtra)
+
+data <- read.csv('metrics_summary.xls', header=TRUE, sep = "\t", check.names = FALSE)
+data <- data[,c('SampleName', 'Estimated number of cell', 'Mean reads per cell',  'Mean UMI count per cell',  'Median genes per cell',  'Total genes detected')]
+
+data %>%
+  kbl(align = "c", booktabs = TRUE) %>% row_spec(0, bold = TRUE, font_size=12, background = '#14B8E5', align = "c") %>%
+kableExtra::kable_styling(position = "left", latex_options = c("striped", "hold_position"), stripe_color = "gray!6") %>% kable_classic(full_width = T, html_font = "Cambria")
+```
+
+注:
+**SampleName:** 样本名称；
+**Estimated number of cell:** 检测到的细胞数；
+**Mean reads per cell:** 每个细胞平均Reads数；
+**Mean UMI count per cell:** 每个细胞的UMI数平均数；
+**Median genes per cell:** 每个细胞中基因数的中位数；
+**Total genes detected:** 所有细胞的基因总数。
+
+## 细胞亚群鉴定
+
+&emsp;&emsp;利用Cell Ranger对测序数据进行比对及定量，后续利用Scanpy软件做进一步分析，主要包括数据标准化处理、PCA（Principal Component Analysis）分析、、UMAP（Uniform Manifold Approximation and Projection）分析、细胞聚类、marker gene分析、细胞注释等。
+
+### 降维与聚类
+
+经过过滤之后的表达矩阵，使用Scanpy 进行降维聚类分析：
+
+&emsp;&emsp;1）首先进行数据的表达量均一化，对测序深度进行校正，消除技术噪音；
+
+&emsp;&emsp;2）然后选取高可变基因（细胞间高特征基因），用于提高细胞分群准确度（默认值为2000）；
+
+&emsp;&emsp;3）进一步对表达量值均一化处理后，利用PCA分析对数据进行降维，PCA降维是一种线性降维方法，运用方差分解，将高维的数据映射到低维的空间中；然后基于SNN聚类算法对细胞进行聚类和分群，构建细胞间的聚类关系；
+
+&emsp;&emsp;4）最后将降维后的数据传递到UMAP进行可视化展示，细胞之间的基因表达模式越相似，在UMAP图中的距离也越接近。
+
+### 聚类结果可视化
+
+&emsp;&emsp;降维完成后，我们基于图的聚类方法，将细胞嵌入图后使用K-近邻方法在表达相似的细胞之间画出边缘，从而将这个图分割成高度关联的类别。我们利用UMAP对聚类得到的结果进行可视化展示，UMAP的核心思想是在衡量高维空间中点的相似性后在低维空间中对数据进行排序。但是UMAP是构建数据的高维图，然后在低维图表示时尽可能保留高维空间中的相似性。与tSNE相比UMAP可以更清楚地将组彼此分开。所有cluster的UMAP图，不同颜色表示不同的cluster，结果如下：
+
+```{r out.width="70%"}
+knitr::include_graphics("umap_dimplot_cluster.png")
+```
+
+## 特征基因分析 {.tabset .tabset-fade .tabset-pills}
+
+通过上述聚类分析，已经将细胞区分成了不同的cluster。根据每个cluster中的基因表达情况，可以鉴定某个cluster和其他cluster之间的差异表达基因，从而确定不同cluster特征性表达基因（marker基因）。 基于降维聚类得到的结果，利用Scanpy的非参数检验方法（wilcox秩和检验），将cluster0的细胞与其余cluster的细胞进行差异表达分析，以此类推， 鉴定每个cluster中显著差异表达的marker基因，默认筛选标准为logFC>1 且Thred < 0.05（parameter is: FDR）,每个clusterTop3特征基因如下：
+
+### Top3特征基因dot plot
+
+```{r out.width="70%"}
+knitr::include_graphics("dotplot_top3_marker_gene.png")
+```
+
+## 细胞亚群注释
+
+&emsp;&emsp;目前，细胞类型鉴定主要有两种方法，一种是基于已有细胞类型的Marker 基因，通过软件或者人为鉴定这些特定Marker 所对应的细胞类型，即主要有监督和半监督这两种方式；另一种是基于现有表达谱参考数据集，基于相似性通过非监督的方式鉴定细胞类型。这两种方法各有优劣。前者人为干扰因素较多且可能对现有Marker 过于依赖。后者基于参考数据集进行鉴定，可有效避免人为干扰，但是也受制于参考数据集中的现有数据，只能鉴定到大类。目前的经验方法是，结合两种方法进行鉴定细胞类型，使细胞类群鉴定结果更可靠。(基于PanglaoDB数据库https://panglaodb.se/进行自动化注释结果如下)
+
+
+### 细胞类型注释
+
+```{r out.width="70%"}
+knitr::include_graphics("umap_dimplot_celltype.png")
+```
+
+注：细胞类型鉴定的过程即复杂又繁琐，自动注释只能提供一个参考，细胞注释要同时结合自动化注释和人工注释，这两种方法并不是独立割裂开来的，需要搭配使用，软件自动化细胞注释方法方便且系统化，完全依赖于参考数据集，注释的结果有时也并不是高置信度注释。在我们提供的数据库自动注释的基础上，后续可根据已发表的文章（物种、疾病、组织检索）或者 cell marker 等数据库进行进一步的人工注释校正，可大大提高注释的准确度。
+
+### 鉴定细胞类型统计
+
+```{r out.width="70%"}
+knitr::include_graphics("celltype_proportion_group.png")
+```
+
+
+
+# 参考文献
+
+[1] dnbc4tools：https://github.com/MGI-tech-bioinformatics/DNBelab_C_Series_HT_scRNA-analysis-software/tree/version2.0
+
+[2] Scanpy：Wolf, F. A. ,  P. Angerer , and  F. J. Theis . "Scanpy for analysis of large-scale single-cell gene expression data." Cold Spring Harbor Laboratory 1(2017).
+
+[3] bimod：Mcdavid A , Finak G , Chattopadyay P K , et al. Data Exploration, Quality Control and Testing in Single-Cell qPCR-Based Gene Expression Experiments[J]. Bioinformatics, 2013, 29(4):461-467.
+
+[4] t-SNE：Maaten L V D, Hinton G. Visualizing Data using t-SNE[J]. Journal of Machine Learning Research, 2008, 9(2605):2579-2605.
+
+[5] Kanehisa, M., M. Araki, et al. (2008). KEGG for linking genomes to life and the environment. Nucleic acids research.(KEGG)
+
+[6] Zheng G X, Terry J M, Belgrader P, et al. Massively parallel digital transcriptional profiling of single cells[J]. Nature Communications, 2017, 8:14049.
+
+
+
+
+
+
+
+
+
+
+
+

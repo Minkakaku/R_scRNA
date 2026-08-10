@@ -1,0 +1,72 @@
+### 3.4 物种注释
+
+#### 3.4.1 物种注释基本步骤
+
+&emsp;&emsp;1. 为了研究样品物种组成及多样性信息，我们使用Kaiju软件<sup>[14]</sup>将去冗余基因集（Unigenes）中的代表序列同NCBI的NR数据库进行比对，筛选具有最高序列相似性的蛋白，通过NR数据库对应的分类学信息数据库获得物种注释；
+
+&emsp;&emsp;2. 根据物种注释结果和非冗余基因定量结果，计算各个样品在各个分类层级（界Kingdom、门Phylum、纲Class、目Order、科Family、属Genus、种Species）上的绝对（Absolute）和相对（Relative）丰度信息度，从而构建相应分类学水平上的丰度谱（Abundance profile）；
+
+&emsp;&emsp;3. 从各个分类层级上的丰度表出发，进行Krona分析，丰度概况展示，丰度聚类分析，PCA、NMDS和PCoA降维分析，Anosim组间差异分析，组间差异物种LEfSe多元统计分析。
+
+<center>&nbsp;</center>
+
+&emsp;&emsp;**结果文件：**
+
+- 所有去冗余基因的NR数据库注释结果文件：results/04.taxonomic_annotation/NR/unigene.NR.xls；
+- 各个物种层级的绝对丰度表: results/04.taxonomic_annotation/abundance/absolute/unigene.\*.absolute.xls；
+- 各个物种层级的相对丰度表: results/04.taxonomic_annotation/abundance/relative/unigene.\*.relative.xls。
+
+&nbsp;
+
+#### 3.4.2 物种丰度概况
+
+&emsp;&emsp;为了综合而直观的展示各样本中，不同分类层级的物种相对丰度，我们采用Krona<sup>[15]</sup>对物种注释结果进行可视化展示，Krona 示例图如下所示，详细结果请[点击](../04.taxonomic_annotation/krona/taxonomy.krona.html)。
+
+![](`r params$krona_example_pic`){width=60%}
+
+<center>**图3.4.2-1 使用Krona对物种注释结果进行展示（示例图）**</center>
+
+<center>&nbsp;</center>
+
+<center>**说明** 图中，圆圈从内到外依次代表不同的分类级别（界门纲目科属种）；扇形的大小代表不同物种的相对比例；更多详细的信息请参考[Krona展示结果详解](https://github.com/marbl/Krona/wiki/)。</center>
+
+<center>&nbsp;</center>
+
+&emsp;&emsp;从不同分类层级的相对丰度表出发，选取出在各样本中的最大相对丰度排名前10的物种，并将其余的物种设置为Others，绘制出各样本对应的物种注释结果在不同分类层级上的相对丰度柱形图，如下所示：
+
+#####  {- .toc-ignore .tabset .tabset-dropdown}
+
+```{r, echo=FALSE, results='asis'}
+
+tax_order <- c("Genus", "Kingdom", "Phylum", "Class", "Order", "Family", "Species")
+contrast_list <- basename(Sys.glob(file.path(params$tax_barplot_dir, "*")))
+sort_contrast_list <- contrast_list[order(lengths(strsplit(contrast_list, "-vs-")))]
+
+for (contrast in sort_contrast_list) {
+  sample_barplot_files <- Sys.glob(file.path(params$tax_barplot_dir, contrast, "*.barplot.png"))
+  sample_barplot_files <- sample_barplot_files[!grepl("\\.group\\.barplot\\.png$", sample_barplot_files)]
+  tax_level_list <- gsub(".*\\.top.*\\.", "", gsub(".barplot.png", "", basename(sample_barplot_files)))
+  tax_level_list <- tax_level_list[order(match(tax_level_list, tax_order))]
+  for (tax in tax_level_list) {
+    pic <- Sys.glob(file.path(params$tax_barplot_dir, contrast, glue("{contrast}.top*.{tax}.barplot.png")))
+    pic <- pic[!grepl("\\.group\\.barplot\\.png$", pic)]
+    cat("###### ", contrast, " - ", tax, " \n")
+    cat("\n")
+    cat("![](", pic, "){width=70%}", "\n")
+    cat("<center>**图3.4.2-2 物种相对丰度柱形图**</center>", "\n")
+    cat("<center>&nbsp;</center>", "\n")
+    cat("<center>**说明** 横轴表示样本名称；纵轴表示注释到某类型的物种的相对比例；各颜色区块对应的物种类别见右侧图例。</center>", "\n")
+    cat("<center>&nbsp;<center>", "\n")
+    cat("\n")
+  }
+}
+
+```
+
+##### {- .toc-ignore}
+
+&emsp;&emsp;**结果文件：**
+
+- Krona展示结果html文件：results/04.taxonomic_annotation/krona/taxonomy.krona.html；
+- 样本水平的各分类层级top10物种相对丰度柱形图和表格: results/04.taxonomic_annotation/barplot/\*/\*.top10.\*.barplot.{pdf,png,xls}；
+- 分组水平的各分类层级top10物种相对丰度柱形图和表格: results/04.taxonomic_annotation/barplot/\*/\*.top10.\*.group.barplot.{pdf,png,xls}。

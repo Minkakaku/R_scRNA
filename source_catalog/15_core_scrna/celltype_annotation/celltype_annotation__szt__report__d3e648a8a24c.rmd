@@ -1,0 +1,809 @@
+---
+title: "<center>Xenium(5000基因panel)单细胞空间原位转录组分析报告</center>"
+author:
+  - name: "<center>杭州广科安德生物科技有限公司</center>"
+date:
+  - "<center>`r Sys.Date()`</center>"
+runtime: static
+output:
+  html_document:
+    keep_md: false
+    toc: yes
+    toc_float: yes
+    theme: paper
+    number_sections: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, out.width = "90%", message = FALSE, warning = FALSE)
+```
+
+# 项目信息
+
+```{r, layout="l-body-outset"}
+library(kableExtra)
+dt <- data.frame(
+  基本信息 = c('项目编号', '项目名称', '客户单位', '项目联系人', '切片数量'), 
+  项目详情 = c('FWSP20253153', '1张人肝脏及胰腺样本Xenium检测', '浙江大学', '曹婉悦', '21'))
+dt %>%
+  kbl(align = "c", booktabs = TRUE) %>% row_spec(0, bold = TRUE, font_size=16, background = '#14B8E5') %>%
+kableExtra::kable_styling(position = "left", latex_options = c("striped", "hold_position"), stripe_color = "gray!6") %>% kable_classic(full_width = T, html_font = "Cambria")
+```
+
+# 实验流程
+
+## 实验流程概述
+
+&emsp;&emsp;在Xenium载玻片上制备新鲜冷冻（FF）和福尔马林固定石蜡包埋（FFPE）组织切片。对样本进行前期处理以暴露出易于杂交的RNA，将可环化的DNA探针与样本过夜杂交。在PCR仪内完成探针连接，产生可酶促扩增的环状DNA探针。最终将玻片置于Xenium分析仪内进行连续数轮的荧光探针的杂交、成像和去除，实现目标基因的定位和识别，完成数据获取。
+
+```{r echo=FALSE, fig.align='center', out.width="80%"}
+knitr::include_graphics('images/流程示意图.jpg')
+```
+
+## 实验流程详解
+
+### 主要设备
+
+```{r, layout="l-body-outset"}
+library(kableExtra)
+dt <- data.frame(
+  仪器 = c('Xenium Instrument', 'PCR仪', '半自动石蜡切片机', '冷冻病理切片机', 'Qubit 4.0'), 
+  制造商 = c('10x Genomics', 'Biorad', 'Servicebio', 'Servicebio', 'Thermo Fisher'))
+dt %>% 
+    kbl(align = "c", booktabs = TRUE) %>% row_spec(0, bold = TRUE, font_size=14) %>%
+kableExtra::kable_styling("striped", full_width = T)
+```
+
+### 样本制备
+
+(1)对新鲜冷冻（FF）和福尔马林固定石蜡包埋（FFPE）样本进行HE染色，根据染色结果中的样本形态结构进行样本质量判断，并进行目的位置的选取。从包埋样本中提取RNA，用Qubit 4.0对提取的RNA浓度进行检测，用Qsep 100 测定DV200值和RIN值。FFPE样本：质检标准DV200>30%；FF样本：质检标准RIN>4；FxF样本：质检标准DV200>50%。
+
+(2)在Xenium载玻片上制备FF或FFPE组织切片，将切片贴附在Xenium玻片的有效区域，有效区域大小为12.45mm*22.45mm，如下图所示。
+
+注意：制备好的切片需在4周内开启实验。
+
+```{r echo=FALSE, fig.align='center', out.width="40%"}
+knitr::include_graphics('images/样本有效区域.jpg')
+```
+
+### 样本前期处理
+
+(3)根据样本类型的不同进行样本前期处理，新鲜冷冻（FF）样本采用组织固定及透化处理，福尔马林固定石蜡包埋（FFPE）样本采用脱蜡水化及解交联处理。这一步可以暴露出易于同探针杂交的RNA分子。
+
+### 探针孵育&连接&扩增
+
+(4)配制可环化探针（靶点基因特异性），将探针与组织放在PCR仪内过夜孵育（16-24h)。
+
+(5)第二天，通过清洗去除多余的探针。然后在PCR仪内完成探针连接，产生可酶促扩增的环状DNA探针，再进行原位的滚环扩增，生成可供荧光标记探针杂交的基因特异性空间标签序列。
+
+(6)去除样本自荧光，用DAPI染液对组织的细胞核进行染色。
+
+```{r echo=FALSE, fig.align='center', out.width="70%"}
+knitr::include_graphics('images/探针杂交连接扩增.jpg')
+```
+
+### 荧光探针杂交&成像&去除
+
+(7)将玻片置于Xenium分析仪内完成样本扫描，选择后续需要分析的Region。
+
+(8)Xenium分析仪进行多轮的荧光探针的杂交、成像和去除，大约需要2-5天。连续多轮的荧光探针杂交、成像和移除会形成独特的荧光信号组合特征条形码，每一轮杂交反应中，荧光标记探针和基因特异性空间标签序列杂交，通过高分辨率显微镜扫描图像，检测每个荧光探针的位置，然后将荧光探针移除，实现目标基因的定位和识别，最终完成数据获取。
+
+```{r echo=FALSE, fig.align='center', out.width="70%"}
+knitr::include_graphics('images/荧光探针杂交成像解码.jpg')
+```
+
+# 数据结果
+
+## 分析流程图
+
+建议数据分析基本流程如下图所示：
+
+```{r echo=FALSE, fig.align='center', out.width="70%"}
+knitr::include_graphics('images/数据分析流程图.jpg')
+```
+
+## 数据质控 {.tabset .tabset-fade .tabset-pills}
+
+&emsp;&emsp;空间转录组学实验中不可避免会引入一些技术噪音，比如由于实验处理或数据测序中的技术误差，导致部分细胞的测序数据异常（例如某些细胞可能由于实验处理不当或实际转录活性低，表现为转录本数量非常少）。细胞QC的目的是识别和过滤掉这些异常细胞，以避免它们对下游分析（如差异表达分析、聚类或功能分析）产生负面影响。通过去除低质量的细胞，我们可以确保保留下来的细胞是转录活性正常、具有代表性的细胞。这样不仅可以提高分析结果的生物学意义，还能减少假阳性结果。
+
+本次实验，我们按样本统计每个细胞检测到的counts数，从小到大进行排序后，将counts数小于quantile2或大于quantile98或0.85<log10GenesPerUMI<0.99为阈值进行细胞过滤，结果见附件report/02-Cell_filter文件夹。
+
+### 细胞表达QC {.tabshow}
+
+```{r, echo=FALSE, results='asis'}
+library(tidyverse)
+sample_ls <- list.dirs("01-Data_QC", full.names = FALSE, recursive = FALSE)
+
+cat(str_glue("#### all_sample \n\n"))
+cat(str_glue("<img src='01-Data_QC/orig_nCount_nFeature_voilon.png' width='90%'  align = center />"))
+cat("  \n\n")
+cat(str_glue("<img src='01-Data_QC/orig_nCount_nFeature_scatter.png' width='90%'  align = center />"))
+cat("  \n\n")
+
+sample_ls %>%
+  walk(function(x){
+    path1 <- file.path("01-Data_QC", str_glue("{x}/orig_nCount_nFeature_voilon.png"))
+    path2 <- file.path("01-Data_QC", str_glue("{x}/orig_nCount_nFeature_scatter.png"))
+    stopifnot(file.exists(path1))
+    cat(str_glue("#### {x}  \n\n"))
+    # knitr::include_graphics(path)
+    cat(str_glue("<img src='{path1}' width='90%' align = center />"))
+    cat(" \n\n")
+    cat(str_glue("<img src='{path2}' width='90%' align = center />"))
+    cat(" \n\n")
+  })
+
+```
+
+
+### 细胞过滤 {.tabshow}
+
+```{r, echo=FALSE, results='asis'}
+sample_ls <- list.dirs("02-Cell_filter", full.names = FALSE, recursive = FALSE)
+
+cat(str_glue("#### all_sample \n\n"))
+cat(str_glue("<img src='02-Cell_filter/filtered_nCount_nFeature_voilon.png' width='90%'  align = center />"))
+cat("  \n\n")
+cat(str_glue("<img src='02-Cell_filter/filtered_nCount_nFeature_scatter.png' width='90%'  align = center />"))
+cat("  \n\n")
+
+sample_ls %>%
+  walk(function(x){
+    path1 <- file.path("02-Cell_filter", str_glue("{x}/filtered_nCount_nFeature_voilon.png"))
+    path2 <- file.path("02-Cell_filter", str_glue("{x}/filtered_nCount_nFeature_scatter.png"))
+    stopifnot(file.exists(path1))
+    cat(str_glue("#### {x}  \n\n"))
+    # knitr::include_graphics(path)
+    cat(str_glue("<img src='{path1}' width='90%' align = center />"))
+    cat("  \n\n")
+    cat(str_glue("<img src='{path2}' width='90%' align = center />"))
+    cat("  \n\n")
+  })
+
+```
+
+## 分析结果
+
+### 降维聚类分析 {.tabset .tabset-fade .tabset-pills}
+
+经过过滤之后的表达矩阵，使用Scanpy 进行降维聚类分析：
+
+&emsp;&emsp;1）首先进行数据的表达量均一化，对测序深度进行校正，消除技术噪音；
+
+&emsp;&emsp;2）然后选取高可变基因（细胞间高特征基因），用于提高细胞分群准确度（默认值为3000）；
+
+&emsp;&emsp;3）多个样本需要对数据合并后再进行后续分析，可以选择是否去除批次效应，来处理样品在不同批次中产生的与生物复杂性无关的差异，我们使用BBKNN(Batch Balanced K Nearest Neighbours)算法修正批次效应，从而实现不同单细胞数据集的整合；
+
+&emsp;&emsp;4）进一步对表达量值均一化处理后，利用PCA分析对数据进行降维，PCA降维是一种线性降维方法，运用方差分解，将高维的数据映射到低维的空间中；然后基于SNN聚类算法对细胞进行聚类和分群，构建细胞间的聚类关系；
+
+&emsp;&emsp;5）最后将降维后的数据传递到UMAP进行可视化展示，细胞之间的基因表达模式越相似，在UMAP图中的距离也越接近。
+
+#### UMAP {.tabshow}
+```{r, echo=FALSE, results='asis'}
+
+cat(str_glue("##### Cell Cluster  \n\n"))
+cat(str_glue("<img src='03-Dimension_reduction_cluster/umap_dimplot_cluster.png' width='60%' align = center />"))
+cat("  \n\n")
+
+if (file.exists("03-Dimension_reduction_cluster/umap_split_group_cluster.png")) {
+  cat(str_glue("##### Cell Cluster by groups  \n\n"))
+  cat(str_glue("<img src='03-Dimension_reduction_cluster/umap_split_group_cluster.png' width='90%' align = center />"))
+  cat("  \n\n")
+}
+```
+
+#### 细胞Cluster空间映射 {.tabshow}
+
+```{r, echo=FALSE, results='asis'}
+sample_ls <- list.files(path = "03-Dimension_reduction_cluster", pattern = "^spatial_.*\\.png$", full.names = TRUE)
+for (sample in sample_ls){
+  name <- sub(".*spatial_(.*?)_cluster\\.png$", "\\1", sample)
+  cat(str_glue("##### {name}  \n\n"))
+  cat(str_glue("<img src='{sample}' width='90%' align = center />"))
+  cat("  \n\n")
+}
+```
+
+#### 细胞Cluster占比统计
+
+```{r echo=FALSE, fig.align='center', out.width="80%"}
+knitr::include_graphics('03-Dimension_reduction_cluster/cluster_cell_proportion.png')
+```
+
+
+### 特征基因分析 {.tabset .tabset-fade .tabset-pills}
+
+&emsp;&emsp;通过上述聚类分析，已经将细胞区分成了不同的cluster。根据每个cluster中的基因表达情况，可以鉴定某个cluster和其他cluster之间的差异表达基因，从而确定不同cluster特征性表达基因（marker基因）。基于降维聚类得到的结果，利用Scanpy的非参数检验方法（wilcox秩和检验），将cluster0的细胞与其余cluster的细胞进行差异表达分析，以此类推，鉴定每个cluster中显著差异表达的marker基因，默认筛选标准为logFC>0且pvalue < 0.05,详细结果见附件report/04-Marker_gene_analysis/文件夹：
+
+Marker Gene的选择标准，依次进行如下三项筛选：  
+（1）首先按照在当前cluster中的表达比例进行排序，越高越好；  
+（2）再按照p.value进行排序，越低越好；  
+（3）最后按照avg_log2FC进行排序，如果是多个样本的结果，则取多个样本的avg_log2FC的均值作为最终的avg_log2FC，越高越好。  
+综合三项指标的排名，把排序前5的基因作为Cluster Marker。  
+
+#### Top5特征基因
+
+```{r echo=FALSE, fig.align='center', out.width="100%"}
+knitr::include_graphics('04-Marker_gene_analysis/dotplot_top5_marker_gene.png')
+```
+
+#### 特征基因列表
+
+```{r, echo=FALSE, results='asis'}
+library(DT)
+data <- read.table("04-Marker_gene_analysis/all_cluster_marker.xls", sep = '\t', header = T)
+datatable(data, rownames = FALSE, class = 'cell-border stripe', caption = 'Table: show all cluster marker genes.')
+```
+
+
+#### 功能富集 {.tabshow}
+
+我们对聚类后的各Cluster差异基因进行功能富集富集分析，如下为各Cluster富集结果展示：
+
+
+```{r, echo=FALSE, results='asis'}
+data_dir <- "04-Marker_gene_analysis"
+sample_ls <- list.dirs(data_dir, full.names = FALSE, recursive = FALSE)
+sample_ls %>%
+  walk(function(x){
+    path <- file.path(data_dir, str_glue("{x}/GO_Enrichment.png"))
+    # stopifnot(file.exists(path))
+    if (file.exists(path)) {
+      cat(str_glue("##### {x}  \n\n"))
+      cat(str_glue("<img src='{path}' width='90%' align = center />"))
+      cat("  \n\n")
+    }
+  })
+```
+
+### 细胞类型注释 {.tabset .tabset-fade .tabset-pills}
+
+&emsp;&emsp;通过差异基因分析以及Marker 基因鉴定，我们可以确定每个细胞群中的真实细胞类型。目前，细胞类型鉴定主要有两种方法，一种是基于已有细胞类型的Marker 基因，通过软件或者人为鉴定这些特定Marker 所对应的细胞类型，即主要有监督和半监督这两种方式；另一种是基于现有表达谱参考数据集，基于相似性通过非监督的方式鉴定细胞类型。这两种方法各有优劣。前者人为干扰因素较多且可能对现有Marker 过于依赖。后者基于参考数据集进行鉴定，可有效避免人为干扰，但是也受制于参考数据集中的现有数据，只能鉴定到大类。目前的经验方法是，结合两种方法进行鉴定细胞类型，使细胞类群鉴定结果更可靠。结果见附件report/05-Cell_type_annotation文件夹。
+
+#### UMAP {.tabshow}
+```{r, echo=FALSE, results='asis'}
+cat(str_glue("##### Cell Type  \n\n"))
+cat(str_glue("<img src='05-Cell_type_annotation/umap_dimplot_celltype.png' width='60%' align = center />"))
+cat("  \n\n")
+
+if (file.exists("05-Cell_type_annotation/umap_dimplot_celltype_groups.png")) {
+  cat(str_glue("##### Cell Type by groups  \n\n"))
+  cat(str_glue("<img src='05-Cell_type_annotation/umap_dimplot_celltype_groups.png' width='90%' align = center />"))
+  cat("  \n\n")
+}
+```
+
+#### 细胞Cluster空间映射 {.tabshow}
+
+```{r, echo=FALSE, results='asis'}
+data_dir <- "05-Cell_type_annotation"
+sample_ls <- list.files(path=data_dir, pattern="^spatial_.*\\.png$", full.names = TRUE)
+for (sample in sample_ls){
+  name <- sub(".*spatial_(.*?)_celltype\\.png$", "\\1", sample)
+  cat(str_glue("##### {name}  \n\n"))
+  cat(str_glue("<img src='{sample}' width='90%' align = center />"))
+  cat("  \n\n")
+}
+```
+
+#### 细胞类型占比统计
+
+```{r echo=FALSE, fig.align='center', out.width="80%"}
+knitr::include_graphics('05-Cell_type_annotation/celltype_proportion.png')
+```
+
+
+### 空间中心性得分 {.tabshow}
+
+&emsp;&emsp;空间转录组学不仅研究基因表达的空间分布，还探讨细胞之间的相互作用。中心性分数分析有助于理解哪些细胞在细胞通讯网络中处于“关键”位置，这可能提示这些细胞对组织的功能和结构具有重要作用；通过计算中心性分数，可以识别在特定区域或组织中起主导作用的细胞类型或亚群。例如，具有较高中心性分数的细胞可能在组织维持、修复、或信号传递中扮演重要角色；中心性分数分析能揭示细胞在空间网络中的地位，从而帮助我们了解空间依赖的生物学过程，例如发育、炎症反应或癌症扩散。
+
+**聚类系数 (Clustering Coefficient):** 衡量节点在网络中聚集的程度。在空间上下文中，高聚类系数意味着一个细胞的邻居之间也很可能互为邻居，表明一个紧密结合的群体；聚类系数的公式为 $C_C(v) = \frac{2e_v}{k_v(k_v - 1)}$，其中，𝑒𝑣是节点𝑣的邻居之间实际存在的边数，𝑘𝑣是节点𝑣的邻居数。   
+
+**接近中心性 (Closeness Centrality):** 衡量一个节点与其他节点的平均最短距离，它反映了一群细胞在空间上多接近其他细胞；接近中心性定义为这些最短路径长度的倒数的和，公式为 $C_C(v) = \frac{N-1}{\sum_{u \neq v} d(v, u)}$，其中，𝑑(𝑣,𝑢)是节点𝑣和𝑢之间的最短路径长度，𝑁是节点的总数；  
+
+**度中心性 (Degree Centrality):** 表示一个节点的直接连接数量。在空间图中，这可以指示一个细胞或群体相对于其邻居的连接程度；度中心性可以用公式 $C_D(v) = \frac{\text{deg}(v)}{N-1}$ 表示，其中，deg(𝑣)是节点𝑣的度数，即与节点𝑣直接相连的边的数量，N 是节点的总数；   
+
+如下结果为按照不同样本分组，计算空间中心性得分结果，结果见report/07-Computation_spatial_statistics文件夹：
+
+```{r, echo=FALSE, results='asis'}
+data_dir <- "06-Computation_spatial_statistics"
+sample_ls <- list.files(path=data_dir, pattern="centrality_scores_plot.png$", full.names = TRUE)
+for (sample in sample_ls){
+  name <- sub("(.*?)_centrality_scores_plot\\.png$", "\\1", sample)
+  cat(str_glue("#### {basename(name)} 组  \n\n"))
+  cat(str_glue("<img src='{sample}' width='100%' align = center />"))
+  cat("  \n\n")
+}
+```
+
+
+### 空间邻域分析 {.tabset .tabset-fade .tabset-pills}
+
+&emsp;&emsp;在生物学研究中，特别是在肿瘤微环境或免疫反应的研究中，空间邻域分析能够揭示不同细胞类型之间的相互作用，这对于理解疾病机制和开发治疗策略具有重要意义。通过识别特定细胞类型周围的其他细胞类型，可以深入了解细胞间的协同作用、抑制或促进效应，通过探讨对象周围环境及其特征，有助于揭示复杂系统中的相互关系。以下是邻域分析的具体方法描述：
+
+1. 计算最近邻：根据空间坐标信息，计算每个细胞周边最近的k个细胞，返回每个细胞的邻居索引和距离； 
+
+2. 邻居类型分布计算：对每个细胞，计算每个细胞在其邻域内（前k个最近邻）不同细胞类型的分布； 
+
+3. 聚类分析：使用MiniBatchKMeans对窗口求和结果进行聚类，设定聚类个数n（我们默认计算了n=10和n=15）得到每个细胞的邻域特征（CNs）；
+
+4. Fold Change计算：计算每个聚类中心与总体组织平均值之间的 Fold Change（FC），用于评估不同细胞类型在各聚类中的相对丰度；
+
+5. 可视化：统计每个样本中每个聚类的细胞数量，并计算其占比，绘制箱线图以展示不同组别间的差异。
+
+详细结果见report/07-Cell_Neighborhood_analysis文件夹
+
+```{r, echo=FALSE, results='asis'}
+data_dir <- "07-Cell_Neighborhood_analysis"
+cat(str_glue("#### CNs=10 汇总 \n\n"))
+cat(str_glue("<img src='07-Cell_Neighborhood_analysis/CNs_10.png' width='60%' align = center />"))
+cat(" \n\n")
+cat(str_glue("<img src='{data_dir}/CNs_10_cell_proportion.png' width='70%' align = center />"))
+cat(" \n\n")
+```
+
+#### CNs=10 空间原位映射 {.tabshow}
+
+```{r, echo=FALSE, results='asis'}
+data_dir <- "07-Cell_Neighborhood_analysis"
+
+sample_ls <- list.files(path=data_dir, pattern=".*_spatial_CNs_10.png$", full.names = TRUE)
+for (sample in sample_ls){
+  name <- sub(".*?/(.*)_spatial_CNs_10\\.png$", "\\1", sample)
+  cat(str_glue("##### {name} \n\n"))
+  cat(str_glue("<img src='{sample}' width='90%' align = center />"))
+  cat("  \n\n")
+}
+```
+
+
+```{r, echo=FALSE, results='asis'}
+data_dir <- "07-Cell_Neighborhood_analysis"
+cat(str_glue("#### CNs=15 汇总 \n\n"))
+cat(str_glue("<img src='07-Cell_Neighborhood_analysis/CNs_15.png' width='60%' align = center />"))
+cat(" \n\n")
+cat(str_glue("<img src='{data_dir}/CNs_15_cell_proportion.png' width='70%' align = center />"))
+cat(" \n\n")
+```
+
+#### CNs=15 空间原位映射 {.tabshow}
+
+```{r, echo=FALSE, results='asis'}
+data_dir <- "07-Cell_Neighborhood_analysis"
+
+sample_ls <- list.files(path=data_dir, pattern=".*_spatial_CNs_15.png$", full.names = TRUE)
+for (sample in sample_ls){
+  name <- sub(".*?/(.*)_spatial_CNs_15\\.png$", "\\1", sample)
+  cat(str_glue("##### {name} \n\n"))
+  cat(str_glue("<img src='{sample}' width='90%' align = center />"))
+  cat("  \n\n")
+}
+```
+
+
+### 空间邻近度分析
+
+&emsp;&emsp;邻近度分析是空间转录组学中的关键步骤，旨在探讨细胞类型之间的空间关系及相互作用。通过分析每个细胞在一定范围内（如50μm）邻近的细胞类型组成，可以揭示组织的空间结构、细胞间的通讯模式以及特定生物过程的空间依赖性。很多基因表达调控依赖于细胞所处的空间位置。邻近度分析能帮助揭示某些基因或细胞功能是否与特定邻近细胞类型相关，如下结果展示的是每种细胞类型周围50um内其他细胞类型的分组统计结果。详细结果见report/08-Proximity_analysis文件夹
+
+#### 50um {.tabshow}
+
+```{r, echo=FALSE, results='asis'}
+data_dir <- "08-Proximity_analysis"
+# sample_ls <- list.dirs(data_dir, full.names = FALSE, recursive = FALSE)
+sample_ls <- list.files(data_dir, pattern="proximity_50um.png", full.names = TRUE, recursive=TRUE)
+
+sample_ls %>%
+  walk(function(x){
+    # path <- file.path(data_dir, str_glue("{x}/proximity_50um.png"))
+    path <- x
+    x <- x %>% dirname() %>% stringr::str_extract("/.*$") %>% stringr::str_remove("^/")
+    stopifnot(file.exists(path))
+    cat(str_glue("##### {x}  \n\n"))
+    cat(str_glue("<img src='{path}' width='90%' align = center />"))
+    cat(" \n\n")
+  })
+```
+
+
+
+
+#### 0-200um {.tabshow}
+
+在进行邻近度分析时，统计某一细胞类型（如 B cells）周边不同距离范围内其他细胞类型的数量，可以揭示细胞间的相互作用及其在生物学过程中的重要性。细胞之间通过分泌信号分子（如细胞因子）进行交流。邻近度分析可以揭示哪些细胞可能在信号传导过程中发挥作用，从而影响某一细胞类型（如 B cells）的功能。如下结果我们统计了每种细胞类型周边0-50um, 50-100um, 100-150um, 150-200um范围内其他类型细胞数目。详细结果见report/08-Proximity_analysis文件夹
+
+```{r, echo=FALSE, results='asis'}
+data_dir <- "08-Proximity_analysis"
+# sample_ls <- list.dirs(data_dir, full.names = FALSE, recursive = FALSE)
+sample_ls <- list.files(data_dir, pattern="proximity_distance_range.png", full.names = TRUE, recursive=TRUE)
+
+sample_ls %>%
+  walk(function(x){
+    # path <- file.path(data_dir, str_glue("{x}/proximity_distance_range.png"))
+    path <- x
+    x <- x %>% dirname() %>% stringr::str_extract("/.*$") %>% stringr::str_remove("^/")
+    stopifnot(file.exists(path))
+    cat(str_glue("##### {x}  \n\n"))
+    cat(str_glue("<img src='{path}' width='90%' align = center />"))
+    cat(" \n\n")
+  })
+```
+
+
+### 空间最近邻分析
+
+&emsp;&emsp;最近邻分析（Nearest Neighbor Analysis）在空间转录组学中用于理解细胞或空间区域在样本中的相互作用或关联。它是一种通过寻找空间上距离最近的细胞或区域来探索潜在细胞-细胞通讯或微环境影响的分析方法。这可以帮助发现细胞之间的局部关系或相互作用。通过最近邻分析，可以得到关于细胞类型的空间分布、某些细胞类型聚集或分散的模式，甚至揭示细胞之间的通讯潜力。通过最近邻分析，我们可以进行 
+
+1. 细胞通讯研究：细胞间通讯在组织发育、免疫反应和疾病进展中起重要作用。通过分析细胞的最近邻，可以推断出哪些细胞可能通过近距离的细胞信号相互作用；
+
+2. 空间组织结构分析：某些细胞类型可能在特定组织中形成微环境或特定的结构（如免疫微环境、肿瘤微环境等），最近邻分析可以帮助揭示这种组织特性；
+
+3. 探索异质性：理解不同细胞类型如何在空间上排列，可以帮助解释组织的异质性，尤其是在病理学研究中。
+
+#### 密度图结果展示 {.tabshow}
+
+```{r, echo=FALSE, results='asis'}
+data_dir <- "09-Nearest_neighbor_analysis"
+# sample_ls <- list.dirs(data_dir, full.names = FALSE, recursive = FALSE)
+sample_ls <- list.files(data_dir, pattern="nearest_neighbor_proportion.png", full.names = TRUE, recursive=TRUE)
+
+sample_ls %>%
+  walk(function(x){
+    # path <- file.path(data_dir, str_glue("{x}/nearest_neighbor_proportion.png"))
+    path <- x
+    x <- x %>% dirname() %>% stringr::str_extract("/.*$") %>% stringr::str_remove("^/")
+    stopifnot(file.exists(path))
+    cat(str_glue("##### {x}  \n\n"))
+    cat(str_glue("<img src='{path}' width='90%' align = center />"))
+    cat(" \n\n")
+  })
+```
+
+#### 箱型图结果展示 {.tabshow}
+
+```{r, echo=FALSE, results='asis'}
+data_dir <- "09-Nearest_neighbor_analysis"
+# sample_ls <- list.dirs(data_dir, full.names = FALSE, recursive = FALSE)
+sample_ls <- list.files(data_dir, pattern="nearest_neighbor_proportion_boxplot.png", full.names = TRUE, recursive=TRUE)
+
+sample_ls %>%
+  walk(function(x){
+    # path <- file.path(data_dir, str_glue("{x}/nearest_neighbor_proportion_boxplot.png"))
+    path <- x
+    x <- x %>% dirname() %>% stringr::str_extract("/.*$") %>% stringr::str_remove("^/")
+    stopifnot(file.exists(path))
+    cat(str_glue("##### {x}  \n\n"))
+    cat(str_glue("<img src='{path}' width='90%' align = center />"))
+    cat(" \n\n")
+  })
+```
+
+
+
+
+
+# 软件列表
+
+```{r, layout="l-body-outset"}
+library(kableExtra)
+dt <- data.frame(
+  分析内容 = c('数据预处理', '细胞类型注释', '差异分析', '功能富集', '中心性得分', '邻域分析'),
+  软件 = c('scanpy', 'decoupler', 'pydeseq2', 'gseapy', 'squidpy', 'scikit-learn'), 
+  版本 = c('1.10.2', '1.8.0', '0.4.11', '1.0.4', '1.6.1', '1.4.2'))
+dt %>% 
+    kbl(align = "c", booktabs = TRUE) %>% row_spec(0, bold = TRUE, font_size=14) %>%
+kableExtra::kable_styling("striped", full_width = T)
+```
+
+
+# 参考文献
+
+[1] Wang N, Hong W, Wu Y, Chen ZS, Bai M, Wang W, Zhu J. Next-generation spatial transcriptomics: unleashing the power to gear up translational oncology. MedComm (2020). 2024 Oct 6;5(10):e765. doi: 10.1002/mco2.765. **(广科安德学术成果)**
+
+[2] Nan Wang, Yan Song, Weifeng Hong et al. Spatial Single-Cell Transcriptomic Analysis in Breast Cancer Reveals Potential Biomarkers for PD-1 Blockade Therapy, 28 May 2024. **(广科安德成员贡献)**
+
+[3] Palla G, Spitzer H, Klein M, Fischer D, Schaar AC, Kuemmerle LB, Rybakov S, Ibarra IL, Holmberg O, Virshup I, Lotfollahi M, Richter S, Theis FJ. Squidpy: a scalable framework for spatial omics analysis. Nat Methods. 2022 Feb;19(2):171-178. doi: 10.1038/s41592-021-01358-2. Epub 2022 Jan 31. PMID: 35102346; PMCID: PMC8828470.
+
+[4] Wolf FA, Angerer P, Theis FJ. SCANPY: large-scale single-cell gene expression data analysis. Genome Biol. 2018 Feb 6;19(1):15. doi: 10.1186/s13059-017-1382-0. PMID: 29409532; PMCID: PMC5802054.
+
+[5] McDavid A, Finak G, Chattopadyay PK, Dominguez M, Lamoreaux L, Ma SS, Roederer M, Gottardo R. Data exploration, quality control and testing in single-cell qPCR-based gene expression experiments. Bioinformatics. 2013 Feb 15;29(4):461-7. doi: 10.1093/bioinformatics/bts714. Epub 2012 Dec 24. PMID: 23267174; PMCID: PMC3570210.
+
+[6] Kanehisa M, Araki M, Goto S, Hattori M, Hirakawa M, Itoh M, Katayama T, Kawashima S, Okuda S, Tokimatsu T, Yamanishi Y. KEGG for linking genomes to life and the environment. Nucleic Acids Res. 2008 Jan;36(Database issue):D480-4. doi: 10.1093/nar/gkm882. Epub 2007 Dec 12. PMID: 18077471; PMCID: PMC2238879.
+
+[7] Zheng GX, Terry JM, Belgrader P, Ryvkin P, Bent ZW, Wilson R, Ziraldo SB, Wheeler TD, McDermott GP, Zhu J, Gregory MT, Shuga J, Montesclaros L, Underwood JG, Masquelier DA, Nishimura SY, Schnall-Levin M, Wyatt PW, Hindson CM, Bharadwaj R, Wong A, Ness KD, Beppu LW, Deeg HJ, McFarland C, Loeb KR, Valente WJ, Ericson NG, Stevens EA, Radich JP, Mikkelsen TS, Hindson BJ, Bielas JH. Massively parallel digital transcriptional profiling of single cells. Nat Commun. 2017 Jan 16;8:14049. doi: 10.1038/ncomms14049. PMID: 28091601; PMCID: PMC5241818.
+
+[8] Marconato L, Palla G, Yamauchi KA, Virshup I, Heidari E, Treis T, Vierdag WM, Toth M, Stockhaus S, Shrestha RB, Rombaut B, Pollaris L, Lehner L, Vöhringer H, Kats I, Saeys Y, Saka SK, Huber W, Gerstung M, Moore J, Theis FJ, Stegle O. SpatialData: an open and universal data framework for spatial omics. Nat Methods. 2024 Mar 20. doi: 10.1038/s41592-024-02212-x. Epub ahead of print. PMID: 38509327.
+
+
+<!-- css for toc -->
+```{css, echo=FALSE}
+/*TOC*/
+#TOC{
+    border-radius: 0px;
+    font-size: 1.4rem;
+}
+#TOC > p{
+    text-align: center;
+    background: rgba(55,126,184,1);
+    padding: 5px 0px;
+    color:white;
+}
+
+.list-group-item.active, 
+.list-group-item.active:hover, 
+.list-group-item.active:focus {
+    background-color: rgba(55,126,184,0.8);
+}
+
+.list-group-item:hover, 
+.list-group-item:focus {
+    background-color: rgba(55,126,184,0.5);
+    color:white;
+}
+
+```
+
+<!-- css for font -->
+```{css, echo=FALSE}
+body .main-container {    
+    max-width: 1500px;    
+    margin-left: 100px;   
+    margin-right: 100px;
+} 
+
+td{ 
+    font-size: 15px; 
+    text-align: center; 
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+}
+
+th{ 
+    font-size: 15px;
+    text-align: center;
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+    font-weight: 600;
+} 
+
+h1{ 
+    font-size: 25px;
+    font-weight: 600;
+    color: #377EB8; 
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+}
+
+h2{ 
+    font-size: 22px;
+    font-weight: 600; 
+    color: #377EB8; 
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+} 
+
+h3{ 
+    font-size: 20px;
+    font-weight: 600; 
+    color: #377EB8; 
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+} 
+
+h4{ 
+    font-size: 18px; 
+    font-weight: 600;
+    color: #377EB8; 
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+} 
+
+h5{  
+    line-height: 200%;  
+    text-align: center; 
+    font-weight: 600; 
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+} 
+
+img{    
+    margin-left: auto;   
+    margin-right:auto;    
+    display:block;
+}
+
+p{    
+    line-height: 180%;    
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+    text-align: justify;    
+    font-size: 15px;
+}
+```
+
+<!-- css for tabshow and tabset-diy -->
+```{css, echo=FALSE}
+/*tab show*/
+select{
+    padding: 5px;
+    padding-right: 20px;
+    margin-bottom: 20px;
+    margin-right: 5%;
+/*    float: left; */
+}
+select:hover{
+    box-shadow: 0px 0px 2px 2px #AAB2D1;
+    cursor: pointer;
+}
+p::before{ /*清除浮动的影响*/
+    content: "";
+    display: block;
+    clear: both;
+}
+
+.tabclear::after{
+    content: '';
+    display: block;
+    clear: both;
+}
+
+/*tabset diy*/
+.tab-ul{
+    margin: 0px;
+    padding: 0px;
+    padding-top:10px;
+}
+
+.tab-ul::before, .tab-ul::after{
+    content: '';
+    clear: both;
+    display: block;
+}
+
+.tab-li{
+    padding: 4px 20px;
+    margin-right: 3px;
+    list-style: none;
+    background: #eee;
+    cursor: pointer;
+    float: left;
+    transition: background 0.5s;
+}
+.tab-li.active{
+    border-top: 3px solid #8d95aa;
+    border-left: 1px solid #8d95aa;
+    border-right: 1px solid #8d95aa;
+    background: white;
+    padding: 6px 20px;
+    margin-bottom: -1px;
+}
+
+.tab-li:hover{
+    background: #bbc1da;
+}
+
+.tabset-diy .section{
+    border: 1px solid #8d95aa;
+}
+```
+
+
+<!-- 目录内容调整 -->
+
+```{js, echo=FALSE}
+var clock;
+$(function(){
+  clock = setTimeout(() => {
+    $('#TOC').prepend('<p style="font-size:1.6rem;">目录</p>')
+    clearTimeout(clock);
+  }, 1)
+})
+
+```
+
+
+<!-- 折叠布局，tabshow控制 兼容ie-->
+
+```{js, echo = FALSE}
+$(function(){
+
+  // 所有需要折叠子元素的div，class有tabshow
+  var tabs = $('.tabshow');
+  
+  for(var i =0; i < tabs.length; i++){
+    var tablist,  // 需要折叠的子元素div
+        id_list,  // 折叠div的id
+        text_list; // 折叠div的text，用于select的option中显示
+    
+    tablist = tabs.eq(i).children('.section');
+    if(tablist.length < 2) {continue;}
+    
+    id_list = tablist.map(function(){ return '#' + $(this).attr('id') }).get().map(x => x.replace('.', "\\.") );
+    text_list = tablist.map(function(){ return $(this).children(':not("div")').eq(0).hide().text() });
+    text_list = text_list.map(function(){ return this.replace(/^[0-9]+(\.[0-9]+)*\s{1}/g, '') }).get();
+    
+    // 构造select元素
+    var select = $('<select>').attr('id', 'tab-select' + i);
+    for(var j=0; j < id_list.length; j++){
+      var op = $('<option>').attr('value', id_list[j]).text(text_list[j]);
+      if(j === 0){
+        op = op.attr('selected', 'selected');
+      }
+      select.append(op);
+    }
+    
+    // select使用一个div包裹
+    select = $('<div>').append(select);
+    // 如果有clear类属性，则将select的父div加上clear属性
+    var className = tablist.eq(0).attr('class');
+    if(/clear/.test(className)){
+      select.addClass('tabclear')
+    }
+    // 将select嵌入DOM中
+    tablist.eq(0).before(select);
+    
+    // 初始化，默认显示第一个子元素div，其他隐藏
+    $(id_list[0]).show().siblings('.section').hide();
+    
+    // 绑定select的change事件，动态改变div的显隐
+    $('#'+'tab-select' + i).change(function(){
+      var val = $(this).val();
+      $(val).show().siblings('.section').hide();
+    })
+  }
+
+})
+
+
+```
+
+<!-- 自定义tabset（默认tabset无法作用于h6之后的标题） 兼容ie-->
+
+```{js, echo = FALSE}
+$(function(){
+
+  // 所有需要折叠子元素的div，class有tabset-diy
+  var tabs = $('.tabset-diy');
+  
+  for(var i = 0; i < tabs.length; i++){
+    var tablist,  // 需要折叠的子元素div
+        id_list,  // 折叠div的id
+        text_list; // 折叠div的text，用于select的option中显示
+    
+    tablist = tabs.eq(i).children('.section');
+    if(tablist.length < 2) {continue;}
+    
+    id_list = tablist.map(function() { return '#' + $(this).attr('id') }).get();.map(x => x.replace('.', "\\.") )
+    text_list = tablist.map(function(){ return $(this).children().eq(0).hide().text(); });
+    text_list = text_list.map(function(){ return this.replace(/^[0-9]+(\.[0-9]+)*\s{1}/g, '') }).get();
+    
+    // 构造ul元素
+    var ul = $('<ul>').attr('id', 'tab-ul' + i).addClass('tab-ul');
+    for(var j=0; j < id_list.length; j++){
+      var li = $('<li>').addClass('tab-li')
+                        .attr('data-item', id_list[j])
+                        .text(text_list[j]);
+      if(j === 0){
+        li = li.addClass('active');
+      }
+      ul.append(li);
+    }
+    
+    // 将select嵌入DOM中
+    tablist.eq(0).before(ul);
+    
+    // 初始化，默认显示第一个子元素div，其他隐藏
+    $(id_list[0]).show().siblings('.section').hide();
+    
+    // 绑定ul的li的click事件，动态改变div的显隐
+    $('#'+'tab-ul' + i + ' > li').click(function(){
+      // li的active class改变
+      $(this).addClass('active').siblings().removeClass('active')
+      // li对应的div的显隐
+      var item = $(this).attr('data-item');
+      $(item).show().siblings('.section').hide();
+    })
+  }
+
+})
+
+```
+
+
+
+
+
+
+
+

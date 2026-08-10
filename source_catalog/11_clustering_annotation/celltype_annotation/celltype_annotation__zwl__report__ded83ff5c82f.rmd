@@ -1,0 +1,478 @@
+---
+title: "<center>TCR分析报告</center>"
+author:
+  - name: "<center>杭州广科安德生物科技有限公司</center>"
+date:
+  - "<center>`r Sys.Date()`</center>"
+runtime: static
+output:
+  html_document:
+    keep_md: false
+    toc: yes
+    toc_float: yes
+    theme: paper
+    number_sections: true
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, out.width = "90%", message = FALSE, warning = FALSE)
+```
+
+```{=html}
+<style type ="text/css">body .main-container {    max-width: 1500px;    margin-left: 100px;    margin-right: 100px;} td { font-size: 15px; text-align: center; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} th { font-size: 15px; text-align: center; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif"; font-weight: 600;} h1 { font-size: 25px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h2 { font-size: 22px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h3 { font-size: 20px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h4 { font-size: 18px; font-weight: 600; color: #377EB8; font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} h5 {  line-height: 200%;  text-align: center;  font-weight: 600;  font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";} img {    margin-left: auto;    margin-right:auto;    display:block;}p {    line-height: 180%;    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";    text-align: justify;    font-size: 15px;}
+</style>
+```
+# 项目信息
+
+```{r, layout="l-body-outset"}
+library(kableExtra)
+dt <- data.frame(
+  基本信息 = c('项目编号', '项目名称', '客户单位', '项目联系人', '样本数量'), 
+  项目详情 = c('FWSC20251792', 'TCR', '重庆大学附属肿瘤医院', '李佳涛', '2个'))
+dt %>%
+  kbl(align = "c", booktabs = TRUE) %>% row_spec(0, bold = TRUE, font_size=18, background = '#14B8E5') %>%
+kableExtra::kable_styling(position = "left", latex_options = c("striped", "hold_position"), stripe_color = "gray!6") %>% kable_classic(full_width = T, html_font = "Cambria")
+```
+
+# 基础信息
+
+## CDR regions
+
+互补决定区（Complementarity-determining regions），免疫受体的多样性和与抗原的特异性结合主要是由α链β链上的3个区域（CDR1、CDR2、CDR3）决定。 其中CDR1与CDR2完全由V区编码。CDR3区则由V、（D）、J组成，同时在连接位点上包含随机的碱基添加或删除，因此这个区域是机体构成适应性免疫重要组成部分，并在抗原特异性识别过程中发挥重要作用[^1]。
+
+[^1]: Attaf, M., Huseby, E. & Sewell, A. αβ T cell receptors as predictors of health and disease. Cell Mol Immunol 12, 391--399 (2015).
+
+```{r echo=FALSE, out.width="50%",fig.align='center'}
+knitr::include_graphics('/lvdata/wzb/pipline/scirpy/picture/tcr_cdr3.png')
+```
+
+## Chain locus
+
+**VJ junction :**
+
+-   `TRA` (T-cell receptor alpha)
+
+-   `TRG` (T-cell receptor gamma)
+
+-   `IGL` (Immunoglobulin lambda)
+
+-   `IGK` (Immunoglobulin kappa)
+
+**VDJ junction:**
+
+-   `TRB` (T-cell receptor beta)
+
+-   `TRD` (T cell receptor delta)
+
+-   `IGH` (Immunoglobulin heavy chain)
+
+## Clonotype cluster
+
+具有不同的CDR3核苷酸序列但是可识别相同抗原的集合，具有相同或者相似的CDR3氨基酸序列。
+
+# 实验方法与分析流程
+
+## 实验方法
+
+### 建库流程
+
+1.带有cellbarcode的VDJ 5'凝胶珠、细胞预混液，与单细胞形成GEM后溶解。 每个凝胶珠上的结构：
+
+(i) Illumina R1 序列（read 1 测序引物）
+
+(ii) 16 nt 10x 条形码 ，用于区分不同细胞
+
+(iii) 10 nt独特分子标识符(UMI)，用于区分同一细胞的不同转录本，去除PCR的扩增偏差
+
+(iv) 13 nt 模板转换oligo (TSO)
+
+```{r echo=FALSE,out.width="60%", fig.align='center'}
+knitr::include_graphics('/lvdata/wzb/pipline/scirpy/picture/4.png')
+```
+
+2.裂解后的细胞中mRNA首先通过ploy(T)引物进行反转录，反转录至mRNA 5'末端，并在末端加上序列CCC,与TSO的GGG互补配对，实现cDNA的抓取。
+
+```{r echo=FALSE, out.width="50%",fig.align='center'}
+knitr::include_graphics('/lvdata/wzb/pipline/scirpy/picture/1.png')
+```
+
+3.纯化cDNA链，并进行PCR扩增。
+
+```{r echo=FALSE,out.width="50%", fig.align='center'}
+knitr::include_graphics('/lvdata/wzb/pipline/scirpy/picture/2.png')
+```
+
+4.将cDNA分成两份，一份首先使用带有5'接头的通用引物和TCR/BCR恒定区的连续巢式引物进行巢式PCR，然后添加P5接头，并进行随机打断，最后进行末端修复同时加上read2区域以及P7尾组成完整的V（D）J文库。另外一份为转录组建库流程，酶切筛选，末端修复、加A、连接Read2，添加P5与P7完成文库构建。
+
+```{r echo=FALSE,out.width="60%", fig.align='center'}
+knitr::include_graphics('/lvdata/wzb/pipline/scirpy/picture/3.png')
+```
+
+### 文库示意图
+
+1.  V(D)J library
+
+```{r echo=FALSE,out.width="70%", fig.align='center'}
+knitr::include_graphics('/lvdata/wzb/pipline/scirpy/picture/TCR.png')
+```
+
+2.  GEX library
+
+```{r echo=FALSE,out.width="70%", fig.align='center'}
+knitr::include_graphics('/lvdata/wzb/pipline/scirpy/picture/RNA.png')
+```
+
+### 上机测序
+
+  对构建完成的文库测序，使用Illumina Hiseq 或NovaSeq 平台，采用PE150测序模式进行测序。
+
+## 生物信息分析
+
+  1.对免疫组库数据质控、组装及注释使用10x Genomics官方软件Cell Ranger（<https://www.10xgenomics.com/software>） 完成。
+
+  2.其余分析使用scirpy（<https://scirpy.scverse.org/en/latest/>） 完成[^2]。
+
+[^2]: Gregor Sturm, Tamas Szabo, Georgios Fotakis, Marlene Haider, Dietmar Rieder, Zlatko Trajanoski, Francesca Finotello, Scirpy: a Scanpy extension for analyzing single-cell T-cell receptor-sequencing data, Bioinformatics, Volume 36, Issue 18, September 2020, Pages 4817--4818.
+
+  3.Motif分析使用palmotif（<https://github.com/agartland/palmotif>） 完成。
+
+```{r echo=FALSE,out.width="70%", fig.align='center'}
+knitr::include_graphics('/lvdata/wzb/pipline/scirpy/picture/sop.png')
+```
+
+# 分析结果
+
+## 免疫组库组装及注释 {.tabset .tabset-fade .tabset-pills}
+
+使用CellRanger将reads与已知V(D)J fregment进行比对，保留比对长度高于15bp的reads进行后续操作，大致处理流程如下：</br>
+
+1.Assemble contigs </br>
+
+-   过滤掉由于PCR错误、测序错误引起的cellbarcode和UMI的reads。
+-   修剪reads中的接头以及引物序列。
+-   组装每个细胞的转录本。
+
+2.Annotate contigs </br>
+
+-   在转录本中注释V（D）J区域以及CDR3区域。
+
+-   过滤非full-length以及productive的contigs。
+
+3.Call cells </br>
+
+-   识别T/B 细胞。
+
+4.Generate clonotypes </br>
+
+-   注释不同的克隆型，并过滤一部分细胞。
+
+下方表格节选部分结果
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, out.width= 700,fig.align="center"}
+library(DT)
+data_tab = read.csv("0.Cellranger/filtered_contig_annotations.tsv",sep = "\t",header = T)
+data_tab = head(data_tab )
+datatable(data_tab,options = list(scrollX = TRUE))
+```
+
+注：is_cell：判断cellbarcode是否为细胞 contig_id：contig id号 high_confidence:是否可信 length:contig长度 chain:contig的链型（TRA，TRB，IGK，IGL，IGH）full_length：contig是否为全长 productive：contig是否有效 cdr3：CDR3区的氨基酸序列 cdr3_nt：CDR3区的核苷酸序列 reads：contig比对上的reads数 umis：contig比对上的umi数
+
+## 数据质控 {.tabset .tabset-fade .tabset-pills}
+
+  首先对链型进行统计，包含免疫受体的类型（TCR/BCR），受体亚型（α/β T cells,IG-heavy/IG-κ B cells,IG-heavy/IG-λ B cells）的分布情况统计。
+
+  免疫受体的类型主要分为TCR或BCR。当存在既有TCR，又有BCR的细胞将会被标记为ambiguous，在质控过程中将去除。
+
+  对受体亚型统计时，大多数T细胞仅包含一条α（VJ构成的TRAC）一条β（VDJ构成的TRBC）。但仍存在部分细胞由于等位基因排斥机制[^3]，存在多种TCR/BCR构成的情况（α/β/α T cells,α/β/β T cells,α/β/α/β T cells）[^4]。
+
+[^3]: Brenna L Brady, Natalie C Steinel, and Craig H Bassing. Antigen receptor allelic exclusion: an update and reappraisal. J. Immunol., 185(7):3801--3808, October 2010.
+
+[^4]: Christian Vettermann and Mark S. Schlissel. Allelic exclusion of immunoglobulin genes: models and mechanisms. Immunological Reviews, 237(1):22--42, August 2010.
+
+  当T细胞包含2对链（α+β）以上时，一般而言是由于在实验捕获阶段存在两个或两个以上的细胞进入一个GEM中，需要在质控过程中过滤去除。同时由于测序效率也会产生单α或者单β构型的细胞，同样需要进行过滤。
+
+### QC_raw
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, out.width= 700,fig.align="center"}
+library(kableExtra)
+knitr::include_graphics('1.Quality Control/1.1.QC_raw.png')
+```
+
+注1：从左至右分别为1.受体类型在样本中分布柱状图 2.受体亚型在样本中分布的柱状图 3. 两对链以上细胞在单细胞umap中分布图
+
+注2：Singel pair表示包含一对轻重链；Orphan VJ/VDJ表示为仅为单一轻/重链；extra VJ/VDJ表示除拥有一对轻重链以外，仍有单独一条轻/重链；two full chains表示拥有两对轻重链；multi chains 表示结果拥有两对链以上，ambigious 同时包含TCR以及BCR链
+
+### QC_filter
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, out.width= 700,fig.align="center"}
+library(kableExtra)
+knitr::include_graphics('1.Quality Control/1.2.QC_filter.png')
+```
+
+注：过滤后的结果，通常情况下会过滤单重/轻链，两对链以上，以及TCR+BCR的细胞。
+
+## 定义克隆型
+
+  不同细胞的CDR3的核苷酸序列虽不同但是存在可识别相同抗原的潜能，通过计算不同序列间的距离矩阵定义相同或者相似的克隆型。
+
+```{r, layout="l-body-outset",out.width= 700}
+library(kableExtra)
+
+knitr::include_graphics('2.Define clonotype clusters/2.Network.png')
+```
+
+注1：从左至右分别为 1.不同样本的克隆型邻域图 2.不同分组的克隆型邻域图 3.不同亚型的克隆型邻域图
+
+注2：其中每个圆表征具有相同氨基酸序列。圆大小代表对应的克隆型的细胞数量，连线表示不同CDR3序列间相似性较强，数字表示该克隆型的编号。
+
+## 克隆扩增分析 {.tabset .tabset-fade .tabset-pills}
+
+  依据克隆型对应的细胞数进行划分，其中克隆型对应绝对细胞数为1的克隆型为单克隆，细胞数高于1的为多克隆细胞，多克隆细胞可能是由于抗原刺激发生增殖的主要功能群体。这里除按数量划分以外，也采用多样性指数（香农系数/基尼系数）用于评价不同细胞类型的复杂程度，以香农指数为例，数值越低，其表征多样性较差，对应的主克隆特征越强。
+
+### clonosize_umap
+
+```{r, layout="l-body-outset",out.width= 700}
+knitr::include_graphics('3.Clonal expansion/3.1.Clonotype_analysis_umap.png')
+```
+
+注：从左至右分别为1. 不同clonosize单细胞的umap分布水平 2.不同clonosize单细胞umap分布水平 3.单细胞细胞类型定义umap
+
+### clonosize_barplot
+
+```{r, layout="l-body-outset",out.width= 700}
+knitr::include_graphics('3.Clonal expansion/3.2.Clonotype_expansion_barplot.png')
+```
+
+注：从左至右分别为1. 不同细胞类型的clonosize分布柱状图2.不同细胞类型clonosize分布柱状图（标化）3. 各细胞类型香农指数评分
+
+### gini index
+
+```{r, layout="l-body-outset",out.width= 400}
+knitr::include_graphics('3.Clonal expansion/3.3.Clonotype_expansion_barplot.png')
+```
+
+## 克隆型丰度分析 {.tabset .tabset-fade .tabset-pills}
+
+### Top10克隆型丰度 {.tabset .tabset-fade .tabset-pills}
+
+  按照克隆型的扩增数量进行排序后，选择Top10的克隆型，分别统计分组占比以及细胞类型占比，查看高克隆的克隆型是特异的还是组间/细胞类型间所共享的。
+
+#### Clonotype_abundance_celltype
+
+```{r, layout="l-body-outset",out.width= 700}
+knitr::include_graphics('4.Clonotype abundance/4.1.Clonotype_abundance_celltype_barplot.png')
+```
+
+注：从左至右分别为1.克隆数量Top10的克隆型在不同细胞类型中分布柱状图 2.克隆数量Top10的克隆型在不同细胞类型中分布柱状图（样本标化）3.克隆数量Top10的克隆型在不同细胞类型中分布柱状图（归1标化）
+
+#### Clonotype_abundance_group
+
+```{r, layout="l-body-outset",out.width= 700}
+knitr::include_graphics('4.Clonotype abundance/4.2.Clonotype_abundance_group_barplot.png')
+
+```
+
+注：从左至右分别为1.克隆数量Top10的克隆型在不同分组分布柱状图 2.克隆数量Top10的克隆型在不同分组中分布柱状图（细胞类型标化）3.克隆数量Top10的克隆型在不同分组中分布柱状图（归1标化）
+
+### Top10 V区丰度 {.tabset .tabset-fade .tabset-pills}
+
+  通过对VJ或VDJ的V区（高可变区）丰度分布，可以反映出不同分型的异质性。
+
+#### Top10_V\_celltype
+
+```{r, layout="l-body-outset",out.width= 700}
+knitr::include_graphics('4.Clonotype abundance/4.1.1.Clonotype_abundance_celltype_VJ_barplot.png')
+knitr::include_graphics('4.Clonotype abundance/4.1.2.Clonotype_abundance_celltype_VDJ_barplot.png')
+```
+
+注：上2图表示VJ的V区在不同细胞类型上的分布情况，下2图表示VDJ的V区在不同细胞类型中的分布情况。
+
+#### Top10_v\_group
+
+```{r, layout="l-body-outset",out.width= 700}
+knitr::include_graphics('4.Clonotype abundance/4.2.1.Clonotype_abundance_group_VJ_barplot.png')
+knitr::include_graphics('4.Clonotype abundance/4.2.2.Clonotype_abundance_group_VDJ_barplot.png')
+```
+
+注：上2图表示VJ的V区在不同组别上的分布情况，下2图表示VDJ的V区在不同组别中的分布情况。
+
+### Top10 组成 {.tabset .tabset-fade .tabset-pills}
+
+  通过桑基图反应Top10克隆型的V(D)J组成情况。
+
+#### Top10_sankey
+
+```{r, layout="l-body-outset",out.width= 700}
+knitr::include_graphics('4.Clonotype abundance/4.4.Top10_sankey_combination.png')
+```
+
+注：VJ_1\_V表示TRAV VJ_1\_J表示TRAJ VDJ_1\_V表示TRBV VDJ_1\_d表示TRBD VDJ_1\_j表示TRBJ
+
+### Top10 marker {.tabset .tabset-fade .tabset-pills}
+
+  单细胞同一细胞类型可分布在不同克隆型中，其功能可能存在差异，这里对不同克隆型之间细胞的差异基因进行计算并展示Top10差异基因（部分）。
+
+```{r, layout="l-body-outset",out.width= 700}
+dirname = dir('4.Clonotype abundance/4.5.Clonotype marker/')
+first_name = dirname[1]
+second_name = dirname[2]
+third_name = dirname[3]
+```
+
+
+
+```{r, layout="l-body-outset",out.width= 700}
+dirname = dir('4.Clonotype abundance/4.5.Clonotype marker/')
+knitr::include_graphics(paste0('4.Clonotype abundance/4.5.Clonotype marker/',dirname[1]))
+```
+
+
+
+```{r, layout="l-body-outset",out.width= 700}
+dirname = dir('4.Clonotype abundance/4.5.Clonotype marker/')
+knitr::include_graphics(paste0('4.Clonotype abundance/4.5.Clonotype marker/',dirname[2]))
+```
+
+
+
+```{r, layout="l-body-outset",out.width= 700}
+dirname = dir('4.Clonotype abundance/4.5.Clonotype marker/')
+knitr::include_graphics(paste0('4.Clonotype abundance/4.5.Clonotype marker/',dirname[3]))
+```
+
+## CDR3长度分析 {.tabset .tabset-fade .tabset-pills}
+
+  CDR3由VDJ或VJ形成的一段区域，在空间结构上与抗原决定簇形成精密互补，并决定特异性的抗原识别能力。这里对CDR3的长度进行统计展示。
+
+### CDR3_length_celltype
+
+```{r, layout="l-body-outset",out.width= 700}
+knitr::include_graphics('5.Clonotype size/5.1.CDR3_length_celltype.png')
+```
+
+### CDR3_length_group
+
+```{r, layout="l-body-outset",out.width= 700}
+knitr::include_graphics('5.Clonotype size/5.2.CDR3_length_group.png')
+```
+
+## 表达谱比较 {.tabset .tabset-fade .tabset-pills}
+
+  不同样本间会存在共享的克隆型，这里依据共享克隆型的细胞数量对不用样本间的相似性进行估计，通过计算Jaccard距离对样本进行层次聚类。
+
+```{r, layout="l-body-outset",out.width= 700}
+if(file.exists('6.Comparing repertoires/6.1.Repertoire_heatmap.png')){
+  knitr::include_graphics('6.Comparing repertoires/6.1.Repertoire_heatmap.png')
+}
+```
+
+注：该部分分析样本数目较少将跳过。
+
+## 克隆型模块分析 {.tabset .tabset-fade .tabset-pills}
+
+### 克隆型模块分析 {.tabset .tabset-fade .tabset-pills}
+
+  通过转录组的细胞基因表达相似性寻找克隆型间关系。
+
+#### modularity_score
+
+```{r, layout="l-body-outset",out.width= 700}
+#knitr::include_graphics("7.Clonotype modularity/7.1.Clonotype_modularity_score.png")
+```
+
+注：途中分值越高颜色越黄，表明其克隆型之间越相近。
+
+#### modularity_volcano
+
+```{r, layout="l-body-outset",out.width= 700}
+#knitr::include_graphics("7.Clonotype modularity/7.2.Clonotype_modularity_volcano.png")
+```
+
+### Top10分布及marker {.tabset .tabset-fade .tabset-pills}
+
+  对模块分值Top10得分的克隆型的umap分布进行展示，同时与其他克隆型细胞相比，Top10中表达的差异基因使用violin进行展示。
+
+#### Top10_modularity_umap
+
+```{r, layout="l-body-outset",out.width= 700}
+#knitr::include_graphics("7.Clonotype modularity/7.3.Top10_Clonotype_modularity_umap.png")
+```
+
+#### Top10_modularity_violin
+
+```{r, layout="l-body-outset",out.width= 700}
+#knitr::include_graphics("7.Clonotype modularity/7.4.Top10_Clonotype_modularity_violin.png")
+```
+
+## VDJdb抗原分析
+
+  使用VDJdb([https://vdjdb.cdr3.net/](https://vdjdb.cdr3.net/）数据库，对已有的TCR（VJ/VDJ）构成进行匹配注释，获得抗原物种以及抗原基因){.uri})数据库，对已有TCR（VJ/VDJ）构成进行匹配注释，获得抗原物种以及抗原基因。
+
+```{r, layout="l-body-outset",out.width= 700}
+knitr::include_graphics("8.VDJDB Predict/VDJDB_epitope_databases.png")
+```
+
+## Motif分析 {.tabset .tabset-fade .tabset-pills}
+
+  针对Top10的高扩增克隆型的VJ/VDJ的氨基酸组成进行了Motif分析并进行展示（部分）。
+
+```{r, layout="l-body-outset",out.width= 700}
+dirname = dir('9.Motif Analysis/')
+first_name = dirname[1]
+second_name = dirname[2]
+third_name = dirname[3]
+fourth_name = dirname[4]
+```
+
+### `r first_name`
+
+```{r out.width="100%"}
+dirname = dir('9.Motif Analysis/')
+knitr::include_graphics(paste0("9.Motif Analysis/",dirname[1]))
+```
+
+### `r second_name`
+
+```{r out.width="100%"}
+dirname = dir('9.Motif Analysis/')
+knitr::include_graphics(paste0("9.Motif Analysis/",dirname[2]))
+```
+
+### `r third_name`
+
+```{r out.width="100%"}
+dirname = dir('9.Motif Analysis/')
+knitr::include_graphics(paste0("9.Motif Analysis/",dirname[3]))
+```
+
+### `r fourth_name`
+
+```{r out.width="100%"}
+dirname = dir('9.Motif Analysis/')
+knitr::include_graphics(paste0("9.Motif Analysis/",dirname[4]))
+```
+
+## 共享克隆型分析 {.tabset .tabset-fade .tabset-pills}
+
+  对不同样本/细胞类型共享的克隆型的细胞数量进行统计，并绘制热图进行展示。
+
+### Heatmap_cell_type
+
+```{r out.width="70%"}
+knitr::include_graphics("10.Share Clonotype/Heatmap_cell_type_cell_withnumber.png")
+
+```
+
+### Heatmap_sample
+
+```{r out.width="70%"}
+knitr::include_graphics("10.Share Clonotype/Heatmap_sample_cell_withnumber.png")
+```
+
+### Heatmap_group
+
+```{r out.width="70%"}
+knitr::include_graphics("10.Share Clonotype/Heatmap_group_cell_withnumber.png")
+```
+
+# 参考文献

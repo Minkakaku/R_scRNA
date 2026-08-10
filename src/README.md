@@ -11,7 +11,7 @@
 - `04_qc_filter.R`：逐样本阈值表和细胞过滤。
 - `05_normalization.R`：NormalizeData、SCTransform 和 SCT integration。
 - `06_batch_correction.R`：Harmony、CCA 和批次校正选择。
-- `07_clustering.R`：PCA 维度、邻接图、聚类和 UMAP。
+- `07_clustering.R`：PCAtools 与 nFactors 自动拐点、邻接图、聚类和 UMAP。
 - `08_markers.R`：marker 计算和 marker 汇总。
 - `09_annotation.R`：人工注释模板、注释应用和 cluster 清理。
 - `10_cell_proportion.R`：细胞比例统计和输出。

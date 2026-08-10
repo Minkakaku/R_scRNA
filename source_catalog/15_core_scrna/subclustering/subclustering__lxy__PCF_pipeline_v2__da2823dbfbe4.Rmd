@@ -1,0 +1,2511 @@
+---
+title: "<center> 单细胞蛋白组学（PCF）分析报告 </center>"
+author: 
+  - "<center> 杭州广科安德生物科技有限公司 </center>"
+date: "<center> `r Sys.Date()` </center>"
+# documentclass: ctexart
+# geometry: left=3cm, right=3cm, top=3cm, bottom=2.5cm
+# classoption: "hyperref,"
+# always_allow_html: yes
+params:
+  tb_output: "html"
+  tb_output_: "html, latex"
+  assay: "RNA"
+  gc: TRUE
+output:
+  html_document:
+    number_sections: yes
+    theme: paper
+    toc: yes
+    toc_float: yes
+    toc_depth: 3
+  pdf_document:
+    latex_engine: xelatex
+    fig_caption: yes
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+
+--- 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE
+)
+pacman::p_load(kableExtra, tidyverse, magrittr, glue, grid)
+source("../celldive.R")
+# source("../fix_bugs.R")
+
+
+# set default 
+run_harmony   <- TRUE
+harmony_group <- "ROI_ID" # "Slide_ID" # "ROI_ID"
+cn_group      <- "ROI_ID" # "Slide_ID" # "ROI_ID"
+```
+
+
+
+
+# 项目基本信息
+
+&nbsp;
+```{r project_infomation, eval = TRUE}
+chart_project <- 
+  readxl::read_excel("../data/test_info.xlsx", sheet = "项目信息") %>% 
+  map_dfc(str_replace_na, replacement = "")
+
+
+chart_project %>%
+  kbl(align = "c", booktabs = TRUE) %>% 
+  row_spec(0, bold = TRUE, font_size=18, background = '#14B8E5') %>%
+  kableExtra::kable_styling(
+    position = "left", 
+    latex_options = c("striped", "hold_position"), 
+    stripe_color = "gray!6"
+  ) %>%
+  kable_classic(full_width = T, html_font = "Cambria")
+
+```
+  
+
+
+# 技术简介  
+
+## 仪器平台    
+
+&emsp;&emsp;PhenoCycler-Fusion 单细胞原位空间组学分析平台作为快速高效的空间生物学解决方案，通过集成自动化液流和循环成像，实现全片单细胞分辨率下的超高参数空间表型分析。    
+
+**超高参数**： 每张组织切片可同时检测 100种以上蛋白标志物    
+**高精度**： 实现真正单细胞水平像素， 最高可达 0.25 um /像素     
+**客观**： 对整张组织切片上的每个细胞进行无偏差的空间表型分析    
+
+
+## 适用样本及样本要求   
+
+
+**样本类型**： 石蜡切片（FFPE）、 冰冻切片（FF）、 组织芯片（TMA）等     
+**样本尺寸**： 建议组织切片厚度为石蜡切片4-5um、冰冻切片8-10um， 面积不超过 18 x 35mm      
+
+
+
+# 实验流程
+
+## 实验原理    
+
+&emsp;&emsp;基于独特的 PhenoCycler 超多重免疫荧光染色技术的组织空间蛋白组探索服务计划(STEP)， 在 PhenoCycler-Fusion平台上进行单细胞原位空间组学检测服务。 在检测中使用的每种抗体上都标记有特异性寡核苷酸“条形码标签”(Barcode)。 成像所需的荧光染料上标记和抗体 Barcode 互补的特异性寡核苷酸序列。 通过“染色-成像-移除荧光” 自动化循环， 在PhenoCycler-Fusion 平台上实现多达 100 种以上的蛋白指标的同时检测及分析， 突破传统成像通道数量的限制。
+
+
+  
+```{r process, out.width='60%'}
+# fig.cap="实验流程示意图",
+knitr::include_graphics("figure/pcf流程示意图.png")
+
+```
+
+
+<!-- 不用修改 -->
+## 主要仪器及试剂
+ 
+```{r Instrument}
+
+Instrument <- readxl::read_excel("../data/test_info.xlsx",sheet = "仪器")
+
+
+Instrument %>%
+  kbl(align = "c", booktabs = TRUE) %>% 
+  row_spec(0, bold = TRUE, font_size=18, background = '#14B8E5') %>%
+  kableExtra::kable_styling(
+    position = "left", 
+    latex_options = c("striped", "hold_position"), 
+    stripe_color = "gray!6"
+  ) %>%
+  kable_classic(full_width = T, html_font = "Cambria")
+
+```
+
+```{r Reagent}
+
+Reagent <- readxl::read_excel("../data/test_info.xlsx",sheet = "试剂")
+
+
+Reagent %>%
+  kbl(align = "c", booktabs = TRUE) %>% 
+  row_spec(0, bold = TRUE, font_size=18, background = '#14B8E5') %>%
+  kableExtra::kable_styling(
+    position = "left", 
+    latex_options = c("striped", "hold_position"), 
+    stripe_color = "gray!6"
+  ) %>%
+  kable_classic(full_width = T, html_font = "Cambria")
+
+```
+
+
+## 实验步骤    
+
+### 样本预处理  
+ 
+1)&emsp;FFPE 样本通过 PCF 标准 S0P 进行脱蜡和水化处理；    
+2)&emsp;按照 PCF 标准的抗原修复法， 酸或碱修复， 采用免疫组化压力锅进行修复；    
+3)&emsp;室温避光封闭和抗体染色；   
+4)&emsp;组织固定（冰甲醇＋1.6%多聚甲醛＋PCF 固定剂）；      
+5)&emsp;核染色通过 PCF 标准的 DAPI 染色完成， 待上机检测。   
+ 
+
+### 组织识别 
+ 
+5)&emsp;根据明场捕获图像显示的组织形状，通过PCF的组织识别灵敏度来尽可能识别到所有组织区域，以完成最终的荧光定量图片数据的获取。         
+ 
+
+### 背景自发荧光成像
+
+6)&emsp;通过20×物镜检测背景自发荧光，后续扣除。     
+  
+ 
+### 多轮染色
+
+7)&emsp;染色：每轮过程使用DAPI及另外最多3个抗体对组织样本进行染色；         
+8)&emsp;成像：对标记的biomarker进行成像；         
+9)&emsp;解离：使用解离液将本轮染色的荧光发色基团解离并洗去；      
+10)&emsp;重复步骤7-步骤9，直到完成panel中所有的蛋白的成像。    
+
+
+### 图像处理 
+ 
+11)&emsp;独特的自动化图像采集后处理，提供完美拼接和精确校准的图像数据，通过HALO数字病理图像分析平台 实现真正意义上的单细胞超多重蛋白免疫荧光分析。         
+
+
+### 目标圈选和数据分析 
+ 
+12)&emsp;通过精准的兴趣区域（ROI）来提取目标信息，确定特定蛋白质的丰度及定位，从而对整体空间位置进行定性和定量分析。       
+
+
+
+  
+```{r cellDIVE process, out.width='60%'}
+# fig.cap="实验流程示意图",
+knitr::include_graphics("figure/pcf pipeline.png")
+
+```
+
+
+
+
+# 数据结果
+   
+## 分析流程图  
+ 
+
+&emsp;&emsp;PhenoCycler-Fusion 软件生成的 .qptiff 图像文件， 可以直接对图像整体质量、 每个标志物染色情况 进行快速查看，进行数据质量控制。 在此基础上， 使用 Akoya 预先训练的细胞识别算法， 进行细胞分割。 并进一步完成细胞表型标注、 细胞聚类、 细胞互作、 细胞空间邻域等分析和数据可视化。 
+ 
+
+```{r flow_chart,out.width='40%'}
+knitr::include_graphics("figure/数据分析流程.png")
+
+```
+  
+
+<!-- ## 数据质检（QC）结果   -->
+
+<!-- &emsp;&emsp;本部分内容为CTA分析中的数据质检（QC）分析。其中包含：   -->
+<!-- &emsp;&emsp;（1）Segment QC结果展示，去除不理想的AOI/ROI；   -->
+<!-- &emsp;&emsp;（2）Target QC结果展示，展示各个target分布情况。   -->
+ 
+
+```{r load_ini_data, include=FALSE}
+all_files <- parsePath("../data", roi_label = "object_results")
+
+all_data <- all_files %>%
+  mutate(dat = path %>% map(read_csv)) %>% # add original dat 
+  mutate(ROI_label = ROI_ID,
+         ROI_ID = dat %>% map_chr(parseROILable)) # add ROI label
+
+# check duplicated index
+dup_roi <-
+  all_data %>%
+  mutate(
+    id = str_c(
+      Slide_ID,
+      # Tissue_ID,
+      ROI_ID,
+      sep = " | "
+    ),
+    row = 1:n()
+  ) %>%
+  dplyr::filter(id %in% id[duplicated(id)])
+if(nrow(dup_roi) > 0) stop("Found duplicated ROI\n")
+
+all_data$dat[[1]] %>% parseChannel()
+all_data$dat[[1]] %>% parseChannel() %>% walk(cat, "\n")
+
+# # all channel identical
+# channel_all_identical <- 
+#   all_data$dat %>% 
+#   map(parseChannel) %>% 
+#   as.data.frame() %>%
+#   set_rownames(.[,1]) %>%
+#   apply(1, function(x)all(x == x[1]))
+
+# slide1 have 5-methylcytosine, have to removed
+# if(!all(channel_all_identical) && str_detect(names(channel_all_identical)[!channel_all_identical], "DAPI")){
+# if(!all(channel_all_identical)){
+#   # DAPI通道有问题，一般是DAPI的后缀的问题
+#   all_data$dat <- all_data$dat %>%
+#     map(function(x){
+#       colnames(x) <- colnames(x) %>% str_remove("_R[0-9]{2}")
+#       x
+#     }) 
+  
+  # 默认marker是带有channel后缀的，如果需要将其删除可以在此处修改
+  # 也就是将all_data$dat中的所有数据的列名中的通道作删除处理
+  
+#}
+
+## remove 5-methylcytosine
+all_data$dat <-
+  all_data$dat %>%
+  map(function(x){#browser()
+    # CELLDIVE包含染色轮次的信息
+    # colnames(x) <- colnames(x) %>% str_remove("_R[0-9]{2}")
+
+    x <- x[, colnames(x)[!grepl("5-methylcytosine", colnames(x))]]
+    x
+  })
+
+
+# celldive class
+cd <-
+  createCellDive(
+    raw_meta = all_data,
+    tissue_id = FALSE,
+    sep = " | ",
+    dat_col = "dat" # 原始数据，不需要再读取一次
+  )
+
+
+# set segment
+cd_final <- cd %>% splitSegment()
+
+## getchannel
+#cd %>% getChannel() %>% map(cat, "\n")
+
+
+# set sub_location
+cell_sublocation <-
+  readxl::read_excel("../data/channel_location.xlsx") %>%
+  column_to_rownames("Channels") %>%
+  apply(1, function(x) as.character(x), simplify = FALSE)
+
+
+
+cd_final <- cd_final %>% setCellSubLocationByList(sub_location = cell_sublocation)
+
+# 完成设置，重置表达量
+cd_final <- cd_final %>% resetIntensity()
+
+```
+
+
+
+```{r, include=FALSE}
+
+rm(all_data) 
+rm(cd)
+
+gc()
+gc()
+```
+
+<!-- 保证所有的channel都有cutoff -->
+
+```{r check_cutoff}
+all_checking_marker <- cd_final %>% getChannel() %>% str_subset("DAPI|Dapi|dapi", negate = TRUE)
+is_cutoff_exist <- all_checking_marker %>% map_lgl(~checkCutoff(cd_final, marker = .x))
+
+if(!all(is_cutoff_exist)){
+  # 尝试resetCutoff修改cell_sublocation，保证所有的channel都有cutoff可用
+  # resetCutoff尝试使用其他亚细胞定位的intensity，直至找到cutoff值
+  # 注意不要使用fillCutoff
+  # fillCutoff只是为了填空，可以测试使用
+  
+  cd_final <- cd_final %>% resetCutoff() # 如果无法运行成功，则代表有些channel没有设置cutoff，需要联系实验组
+  
+}
+```
+
+
+<!-- 读取annotation表, 筛选数据 -->
+
+```{r annotation, include=FALSE}
+# # annotation，暂时以meta_ROI代替
+# meta_roi <- readRDS("../data/meta_ROI.rds") %>%
+#   # meta_roi中的Full ROI应为SMA
+#   mutate(Segment_ID = fct_recode(Segment_ID, SMA = "Full ROI")) %>%
+#   mutate(Segment = fct_recode(Segment_ID, "CD3+CD4+CD8+CD20+" = "CD45")) %>%
+#   mutate(original_ID = str_c(Scan_ID, str_c("ROI", ROI_ID, sep =" "), Segment, sep = " | "))
+
+meta_roi <- cd_final[[]] %>%
+  rownames_to_column("cell_id") %>%
+  # mutate(ID = ID %>% str_replace_all("ROI ([0-9]{3})", "\\1")) %>%
+  dplyr::rename(SegmentDisplayName = ID) 
+
+# 查看 Scan_ID 的唯一值
+meta_roi$Slide_ID %>% unique() %>% walk(cat, "\n")
+
+
+# 查看 ROI_ID 的唯一值
+meta_roi$ROI_ID %>% unique() %>% walk(cat, "\n")
+
+
+meta_roi %>% filter(Slide_ID == "CWMDA_PCF_Slide_B021") %>% pull(ROI_ID) %>% unique() %>% 
+  gtools::mixedsort() %>% walk(cat, "\n")
+
+# 查看 Segment_ID 的唯一值
+meta_roi$Segment_ID %>% unique() %>% walk(cat, "\n")
+
+
+
+anno_data_path <- "../data/Annotation.xlsx"
+
+anno_data <- readxl::read_excel(anno_data_path) %>% 
+  dplyr::slice(3:nrow(.)) %>%
+  dplyr::select(!starts_with("..")) %>%
+  dplyr::select(-any_of("No.")) %>% 
+  # mutate(SegmentDisplayName = str_c(Scan_ID, ROI_ID, Segment_ID, sep= " | "))
+  mutate(SegmentDisplayName = str_c(Scan_ID, ROI_ID, Segment_ID, sep= " | "))
+
+{ # ID
+  if(isNA(anno_data[["Patient_ID"]])){
+      slide_levels <- anno_data$Scan_ID %>% factor(., levels = unique(.))  %>% as.numeric()
+      anno_data <- mutate(anno_data, Patient_ID = paste0("Patient", slide_levels))
+  }
+  
+  
+  if(isNA(anno_data[["Segment_ID"]])){
+    anno_data <- anno_data %>% mutate(ID = str_c(Patient_ID, ROI_ID, sep= "_"))
+  }else{
+    anno_data <- anno_data %>% mutate(ID = str_c(Patient_ID, ROI_ID, Segment_ID, sep= "_"))
+  }
+}
+
+# ###
+# # 由于CellDive没有CD45 segment
+# # 使用CD3+CD4+CD8+CD20+代替
+# anno_data$SegmentDisplayName <- anno_data$SegmentDisplayName %>% str_replace_all("CD45", 'CD3+CD4+CD8+CD20+')
+# ###
+
+# 筛选数据
+roi_analysis <- anno_data$SegmentDisplayName
+
+
+local({
+  roi_not_in_initial <- roi_analysis[!roi_analysis %in% meta_roi$SegmentDisplayName]
+  if(length(roi_not_in_initial) > 0){
+    cat("Not all roi in initial data...\nROI: \n")
+    print(str_glue("{str_c(roi_not_in_initial, sep = '\n')}"))
+    stop("please check roi")
+  }
+})
+
+meta_roi <- meta_roi[meta_roi$SegmentDisplayName %in% roi_analysis, ]
+meta_roi <- meta_roi %>% left_join(anno_data, by = 'SegmentDisplayName', suffix = c("", "_rep"))
+
+# ROI是唯一的（ID）
+# meta_roi是每一个cell是唯一的（obj_id）
+meta_roi_uniq <- meta_roi %>% distinct(ID, .keep_all = TRUE) 
+
+# User_columns
+User_columns <- getUserColumnName(anno_data = anno_data, singleLevel = TRUE)
+
+cols_N <- readxl::read_excel(anno_data_path, n_max = 2) %>% 
+  dplyr::slice(2) %>% unlist() %>%.[. == "N" & !is.na(.)] %>% names()
+User_columns <- setdiff(User_columns, cols_N)
+
+User_columns <- User_columns %>% setdiff(c("SegmentDisplayName", "ID" ))
+
+# Group Data
+Group_data <- tryCatch({
+  readxl::read_excel(anno_data_path, sheet = 2) %>%
+    {
+      df <- column_to_rownames(as.data.frame(.), "No.")
+      c_idx <- map_lgl(df, ~all(is.na(.x)))
+      r_idx <- df %>% t %>%as.data.frame %>% map_lgl(~all(is.na(.x)))
+      df[!r_idx, !c_idx]
+    }
+  },error=function(x) NULL
+)
+```
+
+
+
+<!-- 读取细胞marker表 -->
+
+```{r cell_type}
+# cell_type表格
+celltypes <-
+  readxl::read_excel("../data/cell_types.xlsx") %>%
+  pivot_longer(
+    -CellTypes,
+    names_to = "Channels",
+    values_to = "value"
+  ) %>%
+  dplyr::filter(!is.na(value)) %>%
+  group_by(CellTypes) %>%
+  summarise(marker = list(structure(value, names = Channels))) %>%
+  deframe()
+
+
+# cell_type中指定的细胞有些重叠的
+# 也就是说一个细胞既可以是macrophage，也可以是M1 macrophage
+# 因此根据精细程度的分级，分为互斥的三个等级
+# 注意Classification3主要是一些PD-L1相关的细胞类型，并不必然互斥
+
+# 新版本的三个Classification已经是一个互斥全包含的关系
+# 除了Classification2里面的Others T需要通过手动计算来添加
+cell_annotation <-
+  readxl::read_excel("../data/cell_types.xlsx", sheet = 2) %>%
+  map(~ .x[!is.na(.x)])
+```
+
+ 
+```{r, include=FALSE, warning=TRUE}
+
+# check for HALO cutoff
+cd4_cd8 <-
+  cd_final %>%
+  positiveStat(marker = c("CD4", "CD8" )) %>%
+  dplyr::select("ID", `Pos-Pos`) %>%
+  dplyr::filter(`Pos-Pos` > 0.1)
+
+if(nrow(cd4_cd8) > 0){
+  local({
+    # message_ <- glue::glue_collapse(cd4_cd8$ID, sep = "\n", last = "")
+    message_ <- str_c(cd4_cd8$ID, collapse = "\n")
+    warning(
+      str_glue("Percentage of CD4+CD8+ in these ROI are large than 10%:\n {message_}\n")
+    )
+  })
+}
+
+```
+
+
+## 数据分析结果  
+ 
+
+```{r load_analysis_data, include=FALSE}
+# 计算所有ROI的各细胞类型的阴阳性比例
+positive_df <- cd_final %>% panelPostiveStat_speed(panel = celltypes) 
+positive_table_df <- 
+  cd_final %>%
+  panelPostiveStat_speed(panel = celltypes, result = "cell_table") 
+
+# some ROI not found in meta_roi
+# 其实在最开始的时候就应该将这些不需要的ROI或者Cell从cd_final中删除
+# 由于没有写好CellDive类的`[`方法，因此在这里将数据进行去除
+stopifnot(
+  length(meta_roi_uniq$SegmentDisplayName %>% .[! . %in% names(positive_df)]) < 1
+)
+
+positive_df_tidy <-
+  positive_df %>%
+  rownames_to_column("CellType") %>%
+  pivot_longer(
+    -CellType,
+    names_to = "SegmentDisplayName",
+    values_to = "value"
+  ) %>%
+  left_join(meta_roi_uniq[, c("ID", "SegmentDisplayName")], by = 'SegmentDisplayName') %>%
+  dplyr::filter(!is.na(ID)) %>%
+  dplyr::select(-SegmentDisplayName)
+
+```
+
+
+
+### 细胞比例饼图{.tabshow}   
+&nbsp;
+&emsp;&emsp;使用HALO数字病理图像分析平台对PCF的产出结果进行分析，获得每个细胞的各Marker的表达量及Marker的阴阳性cutoff值。   
+&emsp;&emsp;根据每种细胞的Marker定义，计算每个ROI/AOI中的各细胞类型的比例。此细胞比例类似于常规生信分析中的Normlize处理，其值可以用于多个ROI/AOI之间的比较。   
+
+
+
+```{r pie, echo = F, out.width="80%", results='asis',  fig.width = 10, fig.height=15}
+
+walk(User_columns, function(column){
+  cat(paste0("\n\n#### ", column, "  {.unnumbered}  \n\n"))
+  dat <- 
+    positive_df_tidy %>%
+    left_join(meta_roi_uniq[, c(column, "ID"), drop=FALSE]) %>%
+    # mutate(CellType = ifelse( # 将Adjacent Tumor设置为Epithelials ----------------------------
+    #   test = .data[[column]] != "Adjacent", 
+    #   yes  = CellType, 
+    #   no   = CellType %>% str_replace_all("Tumor cell", "Epithelials"))
+    # ) %>%
+    group_by(.data[[column]], CellType) %>%
+    summarise(value = mean(value)) %>%
+    group_by(.data[[column]]) %>%
+    mutate(value = value/sum(value))
+  
+  p <- dat %>%
+    ggplot(aes(x = 1, y = value, fill = CellType)) +
+      geom_col() +
+      theme_bw() +
+      theme(
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        legend.position = "bottom",
+  
+        panel.grid = element_blank(),
+        axis.ticks = element_blank()
+      ) +
+      ggsci::scale_fill_igv()+
+      facet_wrap(~ .data[[column]]) +
+      coord_polar(theta = "y")
+  
+  print(p)
+  cat("  \n\n")
+})
+
+```
+  
+
+<!-- 双分组细胞比例饼图 -->
+```{r, pie2, echo = F, out.width="80%", results='asis',  fig.width = 10, fig.height=15}
+
+# 有双分组需求才进行双分组分析
+eval_for <- FALSE
+if(!is.null(Group_data) && 
+   all(dim(Group_data) > 0)){
+      eval_for <- TRUE
+}
+
+if(eval_for){
+  cat("\n\n")
+  cat("### 双分组细胞比例饼图{.tabshow}  \n\n")
+  cat("\n\n")
+  
+  cat("&emsp;&emsp;根据两个变量来分组统计细胞比例的分布饼图。    ")
+  
+  cat("\n\n")
+  
+  for (i in 1:nrow(Group_data)){
+    # 多组比较的组别
+    r <- Group_data[i, ] %>% unlist
+    r <- r[!is.na(r)]
+    grp <- names(r)
+    grp <- sort(grp)
+    
+    if(length(grp) != 2){
+      stop("双分组分析只应该包含两个变量")
+    }
+    
+    # 正向
+    p1 <-
+      positive_df_tidy %>%
+      left_join(meta_roi_uniq[, c(grp, "ID"), drop=FALSE]) %>%
+      # mutate(CellType = ifelse(# 将Adjacent Tumor设置为Epithelials ----------------------------
+      #   HRD_Group != "Adjacent", 
+      #   CellType, 
+      #   CellType %>% str_replace_all("Tumor cell", "Epithelials")
+      # )) %>%
+      group_by(CellType, .data[[grp[1]]], .data[[grp[2]]]) %>%
+      summarise(value = mean(value)) %>%
+      group_by(.data[[grp[1]]], .data[[grp[2]]]) %>%
+      mutate(value = value/sum(value)) %>%
+      ggplot(aes(x = 1, y = value, fill = CellType)) +
+      geom_col() +
+      theme_bw() +
+      theme(
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        legend.position = "bottom",
+    
+        panel.grid = element_blank(),
+        axis.ticks = element_blank()
+      ) +
+      ggsci::scale_fill_igv()+
+      facet_grid(rlang::inject(!!sym(grp[1]) ~ !!sym(grp[2]))) +
+      # facet_grid(grp[1] ~ grp[2]) +
+      coord_polar(theta = "y")
+    
+    # print
+    cat(paste0("\n\n#### ", grp[1], " X ", grp[2], " {.unnumbered} \n\n"))
+    print(p1)
+    cat("\n\n")
+    
+    # 反向， 不需要反向了，没有意义
+    
+  } # END FOR for
+  cat("\n\n")
+}
+
+
+
+```
+
+### 细胞比例小提琴图{.tabshow}    
+&nbsp;
+&emsp;&emsp;对每个分组中的各个细胞类型的细胞比例数据绘制小提琴图。    
+
+
+```{r volin, echo = F, out.width="80%", results='asis', fig.width = 20, fig.height=25}
+
+walk(User_columns, function(column){
+  cat(paste0("\n\n#### ", column,  "  {.unnumbered}  \n\n"))
+  dat <- 
+    positive_df_tidy %>%
+    left_join(meta_roi_uniq[, c(column, "ID"), drop=FALSE]) 
+    
+  # browser()
+  
+  levs <- dat[[column]] %>% unique 
+  if(length(levs) <= 4){
+    geom_de <- 
+      ggpubr::stat_compare_means(
+        comparisons = levs %>% combn(2) %>% apply(2, c, simplify = FALSE),
+        label = "p.signif",
+        label.y.npc = 1.1
+      )
+  }else{
+    geom_de <- theme()
+  }
+  
+  p <- dat %>%
+    ggplot(aes(x = .data[[column]], y = value, fill = .data[[column]])) +
+    geom_violin(trim = FALSE, color = NA) +
+    geom_jitter(width = 0.1, alpha = 0.3)+
+    geom_de +
+    facet_wrap(~CellType, scales = "free") +
+    # theme_bw() +
+    ggpubr::theme_pubclean() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank(),
+      legend.position = "bottom"
+    ) +
+    scale_y_continuous(limits = function(x) c(x[1], 1.4 * x[2])) +
+    ggsci::scale_fill_aaas() +
+    labs(
+      y = "Cell Proportion"
+    )
+  
+  
+  
+  print(p)
+  cat("  \n\n")
+})
+
+
+```
+
+
+
+<!-- 双分组细胞比例小提琴图 -->
+```{r, volin2, echo = F, out.width="80%", results='asis',  fig.width = 20, fig.height=25}
+
+# 有双分组需求才进行双分组分析
+eval_for <- FALSE
+if(!is.null(Group_data) && 
+   all(dim(Group_data) > 0)){
+      eval_for <- TRUE
+}
+
+if(eval_for){
+  cat("\n\n")
+  cat("### 双分组细胞比例小提琴图{.tabshow}  \n\n")
+  cat("\n\n")
+  
+  cat("&emsp;&emsp;根据两个变量来分组统计细胞比例的小提琴图。    ")
+  
+  cat("\n\n")
+  
+  for (i in 1:nrow(Group_data)){
+    # 多组比较的组别
+    r <- Group_data[i, ] %>% unlist
+    r <- r[!is.na(r)]
+    grp <- names(r)
+    grp <- sort(grp)
+    
+    if(length(grp) != 2){
+      stop("双分组分析只应该包含两个变量")
+    }
+    
+    # 正向
+    p1_ls <-
+      positive_df_tidy %>%
+      left_join(meta_roi_uniq[, c(grp, "ID"), drop=FALSE]) %>%
+      # mutate(CellType =  CellType %>% str_replace_all("Tumor cell", "Epithelials")) %>%
+  
+      group_by(.data[[grp[1]]]) %>%
+      nest() %>%
+      deframe() %>%
+      imap(function(dat, name){
+        # 如果数据全是0，绘制的volin在不trim的情况下很是诡异
+        # 将其中一个0改为1e-8，一个极为接近0的值
+        allZero <-
+          dat %>%
+          group_by(CellType) %>%
+          summarise(value = all(near(value, 0)))
+    
+        for(i in 1:nrow(allZero)){
+          if(allZero[i, "value", drop=TRUE]){
+            idx <- which(
+                (dat$CellType == allZero[i, "CellType", drop=TRUE])
+            )
+            if(length(idx) < 1) next
+            dat[idx[1], "value"] <- .Machine$double.eps ^ 0.5
+          }
+        }
+        
+        # de geom
+        levs <- dat[[grp[2]]] %>% unique 
+        if(length(levs) <= 4){
+          geom_de <- 
+            ggpubr::stat_compare_means(
+              comparisons = levs %>% combn(2) %>% apply(2, c, simplify = FALSE),
+              label = "p.signif",
+              label.y.npc = 1.1
+            )
+        }else{
+          geom_de <- theme()
+        }
+        
+        # plot
+        dat %>%
+          ggplot(aes(x = .data[[grp[2]]], y = value, fill = .data[[grp[2]]])) +
+          geom_violin(trim = FALSE, color = NA) +
+          geom_jitter(width = 0.1, alpha = 0.3) +
+          facet_wrap(~CellType, scales = "free") +
+          # theme_bw() +
+          geom_de +
+          ggpubr::theme_pubclean() +
+          scale_y_continuous(limits = function(x) c(x[1], 1.4 * x[2])) +
+          theme(
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            legend.position = "bottom"
+          ) +
+          ggsci::scale_fill_aaas() +
+          labs(
+            title = name,
+            y = "Cell Proportion"
+          )
+      })
+    
+    # print
+    cat(paste0("\n\n#### ", grp[1], " -> ", grp[2], " {.tabshow .unnumbered} \n\n"))
+    p1_ls %>% iwalk(~{
+      cat(paste0("\n##### ", .y, " {.unnumbered} \n\n"))
+      print(.x)
+      cat("\n\n")
+    })
+    cat("\n\n")
+    
+    # 反向
+    grp <- rev(grp)
+    p1_ls <-
+      positive_df_tidy %>%
+      left_join(meta_roi_uniq[, c(grp, "ID"), drop=FALSE]) %>%
+      # mutate(CellType =  CellType %>% str_replace_all("Tumor cell", "Epithelials")) %>%
+  
+      group_by(.data[[grp[1]]]) %>%
+      nest() %>%
+      deframe() %>%
+      imap(function(dat, name){
+        # 如果数据全是0，绘制的volin在不trim的情况下很是诡异
+        # 将其中一个0改为1e-8，一个极为接近0的值
+        allZero <-
+          dat %>%
+          group_by(CellType) %>%
+          summarise(value = all(near(value, 0)))
+    
+        for(i in 1:nrow(allZero)){
+          if(allZero[i, "value", drop=TRUE]){
+            idx <- which(
+                (dat$CellType == allZero[i, "CellType", drop=TRUE])
+            )
+            if(length(idx) < 1) next
+            dat[idx[1], "value"] <- .Machine$double.eps ^ 0.5
+          }
+        }
+        
+        # de geom
+        levs <- dat[[grp[2]]] %>% unique 
+        if(length(levs) <= 4){
+          geom_de <- 
+            ggpubr::stat_compare_means(
+              comparisons = levs %>% combn(2) %>% apply(2, c, simplify = FALSE),
+              label = "p.signif",
+              label.y.npc = 1.1
+            )
+        }else{
+          geom_de <- theme()
+        }
+        
+        # plot
+        dat %>%
+          ggplot(aes(x = .data[[grp[2]]], y = value, fill = .data[[grp[2]]])) +
+          geom_violin(trim = FALSE, color = NA) +
+          geom_jitter(width = 0.1, alpha = 0.3) +
+          facet_wrap(~CellType, scales = "free") +
+          # theme_bw() +
+          geom_de +
+          ggpubr::theme_pubclean() +
+          scale_y_continuous(limits = function(x) c(x[1], 1.4 * x[2])) +
+          theme(
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            legend.position = "bottom"
+          ) +
+          ggsci::scale_fill_aaas() +
+          labs(
+            title = name,
+            y = "Cell Proportion"
+          )
+      })
+    
+    # print
+    cat(paste0("\n\n#### ", grp[1], " -> ", grp[2], " {.tabshow .unnumbered} \n\n"))
+    p1_ls %>% iwalk(~{
+      cat(paste0("\n##### ", .y, " {.unnumbered} \n\n"))
+      print(.x)
+      cat("\n\n")
+    })
+    cat("\n\n")
+    
+    
+  } # END FOR for
+  cat("\n\n")
+}
+
+
+
+```
+
+
+### 细胞类型相关性热图{.tabshow}  
+
+&nbsp;
+&emsp;&emsp;绘制细胞类型之间的相关性热图，红色底色位正相关性，蓝色底色为负相关性，如果相关性大于0.5或者小于-0.5则绘制一个和底色相对应的点图。    
+
+```{r cell_corr, echo = F, out.width="80%", results='asis', fig.width = 10, fig.height=15}
+
+walk(User_columns, function(column){
+  cat(paste0("\n\n#### ", column, "{.tabshow .unnumbered} \n\n"))
+  
+  p_ls <-
+    positive_df_tidy %>%
+    left_join(meta_roi_uniq[, c(column, "ID"), drop=FALSE]) %>%
+    group_by(.data[[column]]) %>%
+    nest %>%
+    deframe() %>%
+    imap(function(x, name){# browser()
+  
+  
+      all_cells <- x$CellType %>% unique
+  
+      # dat
+      xx <-
+        x %>%
+        pivot_wider(
+          names_from = "CellType",
+          values_from = "value"
+        ) %>%
+        # dplyr::select(!any_of(c("ID", "Segment_ID")))
+        dplyr::select(all_of(all_cells))
+  
+      # hclust
+      cor_dat <- cor(xx)
+  
+      cor_dat[is.na(cor_dat)] <- 0 # NA值设置为0
+  
+      hc <- hclust(as.dist(1 - cor_dat))
+      order_cell <- hc$labels[hc$order]
+  
+      # full data; plot background
+      dat <- cor_dat %>%
+        as.data.frame() %>%
+        rownames_to_column("row") %>%
+        pivot_longer(
+          -row,
+          names_to = "col",
+          values_to = "value"
+        ) %>%
+        mutate(
+          row = factor(row, levels = order_cell),
+          col = factor(col, levels = order_cell)
+        ) %>%
+        mutate(
+          row_num = as.numeric(row),
+          col_num = as.numeric(col)
+        ) %>%
+        dplyr::filter(
+          row_num < col_num
+        ) %>%
+        dplyr::mutate(col = fct_rev(col)) %>%
+        mutate(group = ifelse(value > 0, "P", "N"))
+  
+      p <-
+        dat %>%
+        ggplot(aes(x = col, y = row)) +
+        geom_tile(aes(fill = group), color = 'gray', show.legend = FALSE) +
+        coord_fixed() +
+        scale_fill_manual(values = c(P = "#FEF6F6", N = "#E6ECF6")) +
+        theme_void() +
+        theme(
+          axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+          axis.text.y = element_text(),
+          axis.title = element_blank()
+        ) +
+        labs(title = name)
+      
+      # negative
+      dat_neg <- dat %>%
+        dplyr::filter(value <= -0.5) %>%
+        mutate(Negative = ifelse(value <= -0.75, "-0.75 to -1.0", "-0.5 to -0.75")) %>%
+        mutate(Negative = factor(Negative, levels = c("-0.5 to -0.75", "-0.75 to -1.0")))
+  
+  
+      p1 <- p +
+        geom_point(
+          data = dat_neg,
+          aes(x = col, y = row, color = Negative),
+          size = 6
+        ) +
+        scale_color_manual(
+          values = c("#B0C3E3", "#023fa5") # RColorBrewer::brewer.pal(9, "Blues")[c(4, 6)]
+        )
+  
+      # postive
+      dat_pos <- dat %>%
+        dplyr::filter(value >= 0.5) %>%
+        mutate(Positive = ifelse(value >= 0.75, "0.75 to 1.0", "0.5 to 0.75")) %>%
+        mutate(Positive = factor(Positive, levels = c("0.75 to 1.0", "0.5 to 0.75")))
+  
+      p2 <- p1 +
+        ggnewscale::new_scale_color() +
+        geom_point(
+          data = dat_pos,
+          aes(x = col, y = row, color = Positive),
+          size = 6
+        ) +
+        scale_color_manual(
+          values = c("#ef1a22", "#FAB7BA") # RColorBrewer::brewer.pal(9, "Reds")[c(6, 4)]
+        ) +
+        guides(
+          color = guide_legend(order = 1, ),
+          new_aes = guide_legend(order = 2)
+        )
+  
+      p2
+    })
+    
+  # print
+  
+  p_ls %>%
+    iwalk(~{
+      cat(paste0("\n\n##### ", .y, " {.unnumbered} \n\n"))
+      print(.x)
+      cat("\n\n")
+    })
+  
+  cat("\n\n")
+})
+
+```
+
+
+<!-- 双分组细胞类型相关性热图 -->
+```{r cell_corr2, echo = F, out.width="80%", results='asis',  fig.width = 10, fig.height=10}
+
+# 有双分组需求才进行双分组分析
+eval_for <- FALSE
+if(!is.null(Group_data) && 
+   all(dim(Group_data) > 0)){
+      eval_for <- TRUE
+}
+
+if(eval_for){
+  cat("\n\n")
+  cat("### 双分组细胞类型相关性热图{.tabshow}  \n\n")
+  cat("\n\n")
+  
+  cat("&emsp;&emsp;根据两个变量来分组统计细胞类型的相关性热图。    ")
+  
+  cat("\n\n")
+  
+  for (i in 1:nrow(Group_data)){
+    # 多组比较的组别
+    r <- Group_data[i, ] %>% unlist
+    r <- r[!is.na(r)]
+    grp <- names(r)
+    grp <- sort(grp)
+    
+    if(length(grp) != 2){
+      stop("双分组分析只应该包含两个变量")
+    }
+    
+    # 正向
+    dat_for_ls <-
+      positive_df_tidy %>%
+      left_join(meta_roi_uniq[, c(grp, "ID"), drop=FALSE]) %>%
+      group_by(.data[[grp[[1]]]]) %>%
+      nest %>%
+      deframe() %>%
+      imap(function(x, y){
+        x %>%
+          group_by(.data[[grp[[2]]]]) %>%
+          nest %>%
+          # mutate(name = str_c(y, name, sep = " -> ")) %>%
+          deframe()
+      }) %>%
+      flatDoubleList(sep = " -> ")
+    
+    p_for_ls <-
+      dat_for_ls %>%
+      imap(function(x, name){# browser()
+  
+      all_cells <- x$CellType %>% unique
+  
+      # dat
+      xx <-
+        x %>%
+        pivot_wider(
+          names_from = "CellType",
+          values_from = "value"
+        ) %>%
+        # dplyr::select(!any_of(c("ID", "Segment_ID")))
+        dplyr::select(all_of(all_cells))
+  
+      # hclust
+      cor_dat <- cor(xx)
+  
+      cor_dat[is.na(cor_dat)] <- 0 # NA值设置为0
+  
+      hc <- hclust(as.dist(1 - cor_dat))
+      order_cell <- hc$labels[hc$order]
+  
+      # full data; plot background
+      dat <- cor_dat %>%
+        as.data.frame() %>%
+        rownames_to_column("row") %>%
+        pivot_longer(
+          -row,
+          names_to = "col",
+          values_to = "value"
+        ) %>%
+        mutate(
+          row = factor(row, levels = order_cell),
+          col = factor(col, levels = order_cell)
+        ) %>%
+        mutate(
+          row_num = as.numeric(row),
+          col_num = as.numeric(col)
+        ) %>%
+        dplyr::filter(
+          row_num < col_num
+        ) %>%
+        dplyr::mutate(col = fct_rev(col)) %>%
+        mutate(group = ifelse(value > 0, "P", "N"))
+  
+      p <-
+        dat %>%
+        ggplot(aes(x = col, y = row)) +
+        geom_tile(aes(fill = group), color = 'gray', show.legend = FALSE) +
+        coord_fixed() +
+        scale_fill_manual(values = c(P = "#FEF6F6", N = "#E6ECF6")) +
+        theme_void() +
+        theme(
+          axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+          axis.text.y = element_text(),
+          axis.title = element_blank()
+        ) +
+        labs(title = name)
+      
+      # negative
+      dat_neg <- dat %>%
+        dplyr::filter(value <= -0.5) %>%
+        mutate(Negative = ifelse(value <= -0.75, "-0.75 to -1.0", "-0.5 to -0.75")) %>%
+        mutate(Negative = factor(Negative, levels = c("-0.5 to -0.75", "-0.75 to -1.0")))
+  
+  
+      p1 <- p +
+        geom_point(
+          data = dat_neg,
+          aes(x = col, y = row, color = Negative),
+          size = 6
+        ) +
+        scale_color_manual(
+          values = c("#B0C3E3", "#023fa5") # RColorBrewer::brewer.pal(9, "Blues")[c(4, 6)]
+        )
+  
+      # postive
+      dat_pos <- dat %>%
+        dplyr::filter(value >= 0.5) %>%
+        mutate(Positive = ifelse(value >= 0.75, "0.75 to 1.0", "0.5 to 0.75")) %>%
+        mutate(Positive = factor(Positive, levels = c("0.75 to 1.0", "0.5 to 0.75")))
+  
+      p2 <- p1 +
+        ggnewscale::new_scale_color() +
+        geom_point(
+          data = dat_pos,
+          aes(x = col, y = row, color = Positive),
+          size = 6
+        ) +
+        scale_color_manual(
+          values = c("#ef1a22", "#FAB7BA") # RColorBrewer::brewer.pal(9, "Reds")[c(6, 4)]
+        ) +
+        guides(
+          color = guide_legend(order = 1, ),
+          new_aes = guide_legend(order = 2)
+        )
+  
+      p2
+    })
+    
+    # print
+    cat(paste0("\n\n#### ", grp[1], " -> ", grp[2], " {.tabshow .unnumbered} \n\n"))
+    p_for_ls %>% iwalk(~{
+      cat(paste0("\n##### ", .y, " {.unnumbered} \n\n"))
+      print(.x)
+      cat("\n\n")
+    })
+    cat("\n\n")
+    
+    # 反向
+    # 和正向code基本相同，只有grp顺序反过来，变量名格式有从.._for_..改为.._rev_..
+    grp <- rev(grp)
+    
+    dat_rev_ls <-
+      positive_df_tidy %>%
+      left_join(meta_roi_uniq[, c(grp, "ID"), drop=FALSE]) %>%
+      group_by(.data[[grp[[1]]]]) %>%
+      nest %>%
+      deframe() %>%
+      imap(function(x, y){
+        x %>%
+          group_by(.data[[grp[[2]]]]) %>%
+          nest %>%
+          # mutate(name = str_c(y, name, sep = " -> ")) %>%
+          deframe()
+      }) %>%
+      flatDoubleList(sep = " -> ")
+    
+    p_rev_ls <-
+      dat_rev_ls %>%
+      imap(function(x, name){# browser()
+  
+      all_cells <- x$CellType %>% unique
+  
+      # dat
+      xx <-
+        x %>%
+        pivot_wider(
+          names_from = "CellType",
+          values_from = "value"
+        ) %>%
+        # dplyr::select(!any_of(c("ID", "Segment_ID")))
+        dplyr::select(all_of(all_cells))
+  
+      # hclust
+      cor_dat <- cor(xx)
+  
+      cor_dat[is.na(cor_dat)] <- 0 # NA值设置为0
+  
+      hc <- hclust(as.dist(1 - cor_dat))
+      order_cell <- hc$labels[hc$order]
+  
+      # full data; plot background
+      dat <- cor_dat %>%
+        as.data.frame() %>%
+        rownames_to_column("row") %>%
+        pivot_longer(
+          -row,
+          names_to = "col",
+          values_to = "value"
+        ) %>%
+        mutate(
+          row = factor(row, levels = order_cell),
+          col = factor(col, levels = order_cell)
+        ) %>%
+        mutate(
+          row_num = as.numeric(row),
+          col_num = as.numeric(col)
+        ) %>%
+        dplyr::filter(
+          row_num < col_num
+        ) %>%
+        dplyr::mutate(col = fct_rev(col)) %>%
+        mutate(group = ifelse(value > 0, "P", "N"))
+  
+      p <-
+        dat %>%
+        ggplot(aes(x = col, y = row)) +
+        geom_tile(aes(fill = group), color = 'gray', show.legend = FALSE) +
+        coord_fixed() +
+        scale_fill_manual(values = c(P = "#FEF6F6", N = "#E6ECF6")) +
+        theme_void() +
+        theme(
+          axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+          axis.text.y = element_text(),
+          axis.title = element_blank()
+        ) +
+        labs(title = name)
+      
+      # negative
+      dat_neg <- dat %>%
+        dplyr::filter(value <= -0.5) %>%
+        mutate(Negative = ifelse(value <= -0.75, "-0.75 to -1.0", "-0.5 to -0.75")) %>%
+        mutate(Negative = factor(Negative, levels = c("-0.5 to -0.75", "-0.75 to -1.0")))
+  
+  
+      p1 <- p +
+        geom_point(
+          data = dat_neg,
+          aes(x = col, y = row, color = Negative),
+          size = 6
+        ) +
+        scale_color_manual(
+          values = c("#B0C3E3", "#023fa5") # RColorBrewer::brewer.pal(9, "Blues")[c(4, 6)]
+        )
+  
+      # postive
+      dat_pos <- dat %>%
+        dplyr::filter(value >= 0.5) %>%
+        mutate(Positive = ifelse(value >= 0.75, "0.75 to 1.0", "0.5 to 0.75")) %>%
+        mutate(Positive = factor(Positive, levels = c("0.75 to 1.0", "0.5 to 0.75")))
+  
+      p2 <- p1 +
+        ggnewscale::new_scale_color() +
+        geom_point(
+          data = dat_pos,
+          aes(x = col, y = row, color = Positive),
+          size = 6
+        ) +
+        scale_color_manual(
+          values = c("#ef1a22", "#FAB7BA") # RColorBrewer::brewer.pal(9, "Reds")[c(6, 4)]
+        ) +
+        guides(
+          color = guide_legend(order = 1, ),
+          new_aes = guide_legend(order = 2)
+        )
+  
+      p2
+    })
+    
+    # print
+    cat(paste0("\n\n#### ", grp[1], " -> ", grp[2], " {.tabshow .unnumbered} \n\n"))
+    p_rev_ls %>% iwalk(~{
+      cat(paste0("\n##### ", .y, " {.unnumbered} \n\n"))
+      print(.x)
+      cat("\n\n")
+    })
+    cat("\n\n")
+    
+  }
+  
+}
+
+```
+
+
+### channel相关性热图{.tabshow}  
+
+&nbsp;
+&emsp;&emsp;绘制各个Marker（channel）之间的相关性热图。    
+
+
+
+```{r marker_corr, echo = F, out.width="80%",  results='asis', fig.width = 10, fig.height=10}
+
+walk(User_columns, function(column){
+  cat(paste0("\n\n#### ", column, " {.tabshow .unnumbered}  \n\n"))
+  
+  p_ls <-
+    meta_roi %>%
+    group_by(.data[[column]]) %>%
+    nest() %>%
+    deframe() %>%
+    map('obj_id') %>%
+    imap(function(x, name){#  browser()
+      xx <- x %>% make.names()
+      dat <- cd_final[, xx] %>% GetAssayData() %>% as.matrix() %>% t %>% cor()
+      # colnames(dat) <- rownames(dat) <- colnames(dat) %>% str_remove("-.*$")
+      
+      # dat_notNA <- dat
+      # dat_notNA[is.na(dat_notNA)] <- 0
+      
+      val_rng <- range(dat, na.rm = TRUE)
+      if(val_rng[1] * val_rng[2] < 0){
+        bk1 <- seq(val_rng[1], 0, by = 0.01)
+        bk2 <- seq(0.01, val_rng[2], by = 0.01)
+        
+        col_val <- c(
+          colorRampPalette(c("#3398CB", "white"))(length(bk1)),
+          colorRampPalette(c("white", "#ef4d5d"))(length(bk2))
+        )
+      }else{
+        col_val <- colorRampPalette(c("white", "#ef4d5d"))(50)
+      }
+      
+      # corrplot::corrplot(dat, order = "hclust")
+      hc <- hclust(as.dist(1 - dat), method = "ward.D2")
+  
+      p <- pheatmap::pheatmap(
+        dat,
+        color = col_val,
+        border_color = NA,
+        scale = "none",
+        cluster_rows = hc,
+        cluster_cols = hc,
+        main = name,
+        silent = TRUE
+      )
+      p$gtable %>% ggpubr::as_ggplot()
+  })
+  
+  # print
+  p_ls %>%
+    iwalk(function(p, name){
+      cat(paste0("\n\n##### ", name, " {.unnumbered} \n\n"))
+      print(p)
+      cat("\n\n")
+    })
+  
+  cat("\n\n")
+})
+
+```
+
+
+### 单细胞降维分析{.tabshow}  
+&nbsp;
+&emsp;&emsp;使用Seurat对HALO分析的单细胞蛋白表达矩阵进行降维、聚类分析。      
+
+
+
+```{r, include=FALSE}
+warnning_env <- new.env()
+assign('more', 0, envir = warnning_env)
+assign("less", 0, envir = warnning_env)
+```
+
+
+
+```{r sc, echo = F, include=FALSE, eval=FALSE}
+
+sc <-
+  cd_final %>%
+  .[! rownames(.) %in% "DAPI", ] %>% # remove DAPI
+  # as("Seurat") %>%
+  celldive2Seurat() %>% 
+  FindVariableFeatures() %>%
+  NormalizeData() %>%
+  ScaleData() %>%
+  RunPCA()
+
+# 内存回收
+if(params$gc){
+  # rm(cd_final)
+  gc()
+}
+
+# only use ROI in annotation table
+sc_meta <- sc[['ID']] %>%
+  dplyr::rename(SegmentDisplayName = ID) %>%
+  rownames_to_column("row_name") %>%
+  right_join(
+    meta_roi_uniq[, c(User_columns, 'ID', 'SegmentDisplayName')],
+    by = 'SegmentDisplayName',
+    suffix = c("", "_anno")
+  )
+
+stopifnot(all(!duplicated(sc_meta$row_name))) # 没有重复的cell_id, 则根据WTA中的ROI取出CellDive的数据，否则报错
+sc_filter <- sc[, sc_meta$row_name]
+
+stopifnot(all(sc_meta$row_name == colnames(sc_filter))) # 顺序一致，则addMetaData
+sc_filter <- sc_filter %>% AddMetaData(column_to_rownames(sc_meta, "row_name"))
+
+
+# ElbowPlot(sc_filter, ndims = 15) # only have 15 channels
+if(run_harmony){
+  sc_filter <- sc_filter %>%
+    harmony::RunHarmony(
+      group.by.vars = harmony_group,
+      assay.use = "protein"
+    )
+  
+  sc2 <- sc_filter %>% 
+    RunTSNE(
+      dims = 1:(nrow(sc_filter)-1), 
+      check_duplicates = FALSE,
+      num_threads = 0,
+      reduction = "harmony"
+    )
+  
+  
+  plan("multisession", workers = 4, gc = TRUE)
+  sc2 <- sc2 %>% 
+    RunUMAP(
+      dims = 1:(nrow(sc2)-1),
+    	min.dist = 0.1,
+    	spread = 1.5,
+    	n.neighbors = 50,
+    	local.connectivity = 3,
+      reduction = "harmony"
+    )
+  plan("sequential")
+  future:::ClusterRegistry("stop")
+  
+  #saveRDS(sc2, "../sc2.rds")
+
+}else{
+  # run umap
+  sc2 <- sc_filter %>% 
+    RunTSNE(
+      dims = 1:(nrow(sc_filter)-1), 
+      check_duplicates = FALSE,
+      num_threads = 0
+    )
+  
+  # run umap
+  plan("multisession", workers = 4, gc = TRUE)
+  sc2 <- sc2 %>% 
+    RunUMAP(
+      dims      = 1:(nrow(sc2)-1),
+    	min.dist  = 0.1,
+    	spread    = 1.5,
+    	n.neighbors = 50,
+    	local.connectivity = 3
+    )
+  
+  plan("sequential")
+  future:::ClusterRegistry("stop")
+  
+  # saveRDS(sc2, "sc2.rds")
+}
+
+
+```
+```{r}
+#saveRDS(sc2, "../sc2.rds")
+```
+
+```{r, include=FALSE}
+#saveRDS(sc2, "../sc2.rds")
+sc2 <- readRDS('../sc2.rds')
+```
+
+```{r sc_plot, echo = F, out.width="80%", results='asis', fig.width = 16, fig.height=7}
+walk(User_columns, function(column){
+  cat(paste0("\n\n##### ", column, "\n\n"))
+  
+  p <- c("umap", "tsne") %>%
+    map(function(x){ sc2 %>% DimPlot(group.by = column, reduction = x) }) %>%
+    patchwork::wrap_plots(nrow = 1)
+  
+  print(p)
+    
+  cat("\n\n")
+})
+
+
+```
+
+
+
+```{r sc2, echo = F}
+# annotation_df <- cd_final %>% 
+#   panelPostiveStat(panel = celltypes, result = "cell_table") %>% 
+#   add_others_t(result = "cell_table")
+  
+cell_annotation_df <-
+  cell_annotation %>%
+  map(function(cell_combn){
+
+    positive_table_df %>%
+    map(., cell = rownames(.), cell_types = cell_combn,
+        function(x, cell, cell_types){ # browser()
+          if(all(!x)) return("Others")
+          xx <- cell[x] # all positive cells
+
+          idx <- xx %in% cell_combn
+          if(sum(idx) > 1) {
+            assign('more', get('more', envir = warnning_env) + 1, envir = warnning_env)
+            # return(str_c(xx[idx], collapse = " - "))
+            return("Multi")
+          }
+          if(sum(idx) < 1) {
+            assign('less', get('less', envir = warnning_env) + 1, envir = warnning_env)
+
+            # if(length(xx) == 1) return(xx)
+            # 
+            # stopifnot(length(xx) > 1)
+            # return("Multi") # 这种情况的细胞注释一定是大于1
+            
+            return("Others") 
+          }
+          return(xx[idx])
+    })
+  })
+
+cell_annotation_df_tidy <-
+  cell_annotation_df %>%
+  imap(~ enframe(.x, name = "ID", value = .y)) %>%
+  map(~ mutate(.x, across(where(is.list), unlist))) %>%
+  map(column_to_rownames, var = "ID") %>%
+  do.call(cbind, .)
+
+# 如果一个细胞没有分配为任一种细胞类型，则去除此细胞
+# 考虑到CellDive仅有10+个marker，并不一定能够覆盖到ROI中的所有细胞类型
+
+any_true <- positive_table_df %>% map(~ any(.)) %>%　.[unlist(.)] %>% names() # 至少有一个CellType注释的细胞
+sc_anno <-
+  sc2 %>%
+  AddMetaData(cell_annotation_df_tidy)
+
+sc_anno2 <- sc_anno[, any_true] # only use cells have cell_type
+
+```
+
+```{r sc2_plot, echo = F, out.width="80%", results='asis', fig.width = 16, fig.height=7}
+
+# change Dimplot
+
+classification <- names(cell_annotation)
+
+
+# plot
+reduction_ls_cell <-
+  map(c("umap", "tsne"), function(x){
+    
+    p_ls <-
+      classification %>%
+      map(function(y){
+        sc_anno2 %>% DimPlot(group.by = y, reduction = x) + ggsci::scale_color_igv()
+      }) %>%
+      # list(
+      #   sc_anno2 %>% DimPlot(group.by = classification[1], reduction = x) + ggsci::scale_color_lancet(),
+      #   sc_anno2 %>% DimPlot(group.by = classification[2], reduction = x) + ggsci::scale_color_ucscgb(),
+      #   sc_anno2 %>% DimPlot(group.by = classification[3], reduction = x) + ggsci::scale_color_ucscgb()
+      # ) %>%
+      magrittr::set_names(classification)
+    p_ls
+  }) %>%
+  purrr::transpose() %>%
+  map(function(x) patchwork::wrap_plots(x, nrow = 1))
+
+
+# export
+reduction_ls_cell %>%
+  iwalk(~{
+    cat(str_glue("#### {.y} \n\n"))
+    .x %>% print()
+    cat("\n\n")
+  })
+
+
+```
+
+
+
+```{r sc2_plot2, echo = F, out.width="80%", results='asis', fig.width = 16, fig.height=10}
+
+walk(User_columns, function(column){ 
+  cat(paste0("\n\n#### ", str_glue("{column}_split"), " {.tabshow .unnumbered}  \n\n"))
+
+  classification <- names(cell_annotation)
+
+  p_ls <-
+    classification %>%
+    set_names(., .) %>%
+    map(function(y){ # browser()
+      p <-
+        c("umap", "tsne") %>%
+        set_names(., .) %>%
+        map(function(dr){
+          sc_anno2 %>% DimPlot(group.by = y, split.by = column, reduction = dr) + ggsci::scale_color_igv()
+        }) %>%
+        patchwork::wrap_plots(x, ncol = 1)
+    }) 
+    
+    
+  
+  # print
+  p_ls %>%
+    iwalk(function(p, name){
+      cat(paste0("\n\n##### ", name, " {.unnumbered} \n\n"))
+      print(p)
+      cat("\n\n")
+    })
+  
+  cat("\n\n")
+  
+})
+
+
+```
+
+
+### 细胞注释全景原位图 {.tabshow}      
+
+```{r spatial_plot1,  results='asis', echo = FALSE, fig.height=12, fig.width=20}
+
+
+sp_p_cell_ls <-
+  # c('Classification1', 'Classification2', 'Classification3') %>%
+  cell_annotation %>%
+  names() %>%
+  set_names(., .) %>%
+  map(function(x){
+    meta_dat <- sc_anno2[[]]
+    
+    if(!x %in% colnames(meta_dat)) return()
+    
+    p_ls <-
+      meta_dat %>%
+      group_by(Slide_ID) %>%
+      nest() %>%
+      deframe() %>%
+      
+      imap(function(dat, name){
+        image_wh_r <-
+          dat[c('XMax', 'YMax')] %>%
+          map(quantile, c(0.01, 0.99)) %>% 
+          map(range) %>%
+          map(diff) %>%
+          {.[[1]]/.[[2]]}
+      
+        dat %>%
+          ggplot() +
+          geom_rect(aes(xmin = XMin, xmax = XMax, ymin = YMin, ymax = YMax, fill = .data[[x]])) +
+          scale_y_reverse() +
+          # coord_fixed(ratio = 1/image_wh_r) +
+          coord_equal() +
+          ggsci::scale_fill_igv() +
+          theme_void()
+      })
+    p_ls
+  })
+
+# all_data_meta <-
+#   all_data_annotation[[]] %>%
+#   rownames_to_column("cell_id")
+#   # #TODO: Why Seurat add project names before the cell_id?
+#   # IntegratedData有问题
+#   # mutate(cell_id2 = cell_id) %>%
+#   # mutate(cell_id = str_remove(cell_id, "^.*?_"))
+# 
+# 
+# sp_p_ls <-
+#   cells_boundary_ls %>%
+#   imap(function(cells_boundary, project){ # browser()
+#     image_wh_r <- image_wh_r_ls[[project]]
+#     
+#     dat <-
+#       cells_boundary %>%
+#       right_join(all_data_meta, by = "cell_id")
+#     
+#     p <- dat %>%
+#       ggplot(aes(x = vertex_x, y = vertex_y)) +
+#       geom_polygon(aes(fill = celltype, group = cell_id))  +
+#       scale_y_reverse() +
+#       coord_fixed(ratio = 1/image_wh_r) +
+#       ggsci::scale_fill_igv() +
+#       theme_void()
+#     p
+#   })
+  
+
+# export image
+sp_p_cell_ls %>% 
+  flatDoubleList(sep = " -> ") %>%
+  iwalk(function(p, grp){
+    cat(paste0("#### ", grp, " {.unnumbered .tabshow} \n\n"))
+    print(p)
+    cat("\n\n")
+  })
+```
+
+
+### 蛋白表达全景原位图  {.tabshow}     
+
+```{r spatial_plot2,  results='asis', echo = FALSE, fig.height=12, fig.width=20}
+
+# all markers
+all_markers <- cd_final %>% getChannel()
+
+# spatial plot
+sp_p_marker_ls <-
+  all_markers %>%
+  set_names(., .) %>%
+  map(function(x){
+    
+    meta_dat <- cd_final[[]]
+    expr_dat <- cd_final %>% GetAssayData()
+    
+    plot_dat <- cbind(meta_dat, t(expr_dat)) %>% as.data.frame()
+    
+    p_ls <-
+      plot_dat %>%
+      group_by(Slide_ID) %>%
+      nest() %>%
+      deframe() %>%
+      
+      imap(function(dat, name){ # browser()
+        image_wh_r <-
+          dat[c('XMax', 'YMax')] %>%
+          map(quantile, c(0.01, 0.99)) %>% 
+          map(range) %>%
+          map(diff) %>%
+          {.[[1]]/.[[2]]}
+      
+        dat %>%
+          ggplot() +
+          geom_rect(aes(xmin = XMin, xmax = XMax, ymin = YMin, ymax = YMax, fill = .data[[x]])) +
+          scale_y_reverse() +
+          # coord_fixed(ratio = 1/image_wh_r) +
+          coord_equal() +
+          scale_fill_gradientn(colours = Seurat:::SpatialColors(30) ) + # , transform = 'log1p') +
+          theme_void()
+      })
+  })
+
+# export image
+sp_p_marker_ls %>% 
+  flatDoubleList(sep = " -> ") %>%
+  iwalk(function(p, grp){
+    cat(paste0("#### ", grp, " {.unnumbered .tabshow} \n\n"))
+    print(p)
+    cat("\n\n")
+  })
+```
+
+
+### 细胞社区分析  
+
+```{r cn, include=FALSE}
+k.nn      <- 50 # 多少个最近邻细胞
+k.cluster <- 10 # 多少个CN cluster
+
+
+cn_nn_cellfreq_ls <- 
+  # c('Classification1', 'Classification2', 'Classification3') %>%
+  cell_annotation %>%
+  names() %>%
+  set_names(., .) %>%
+  map(function(x){
+    all_celltypes <- sc_anno2[[x]] %>% unlist(use.names = FALSE) %>% unique() %>% as.character()
+    
+    # construct NN per slide
+    cn_nn_cellfreq_ls <-
+      sc_anno2[[]] %>% 
+      rownames_to_column("cell_id") %>% 
+      mutate(X = (XMin + XMax)/2, Y = (YMin + YMax)/2) %>% 
+      dplyr::select(
+        X, 
+        Y, 
+        .data[[cn_group]],
+        cell_id, 
+        celltype = x 
+      ) %>% 
+      group_by(.data[[cn_group]]) %>%
+      nest() %>%
+      deframe() %>%
+      
+      purrr::discard(function(x) nrow(x) < k.nn) %>% # 数据行小于k.nn无法进行NN计算
+      
+      imap(function(dat, name){ # browser()
+    
+        cn_nn <- RANN::nn2(dat[c('X', 'Y')], k = k.nn)
+        cn_nn_index2cell <- as.character(dat$celltype)[cn_nn$nn.idx]
+        
+        dim(cn_nn_index2cell)      <- dim(cn_nn$nn.idx)
+        rownames(cn_nn_index2cell) <- dat$cell_id
+        
+        # get cell frequency table
+        # add all celltypes, make sure all cell exist in every neighborhood
+        cn_all_celltypes <- matrix(
+          all_celltypes, 
+          nrow = nrow(cn_nn_index2cell), 
+          ncol = length(all_celltypes), 
+          byrow = TRUE
+        )
+        cn_nn_cell2 <- cbind(cn_nn_index2cell, cn_all_celltypes)
+        
+        # all cell have been added 1, so minus 1
+        # table will sort the celltype, so all celltype have identical order 
+        cn_nn_cellcount <- apply(cn_nn_cell2, 1, table) - 1 
+        cn_nn_cellfreq  <- sweep(cn_nn_cellcount, 2, FUN = "/", colSums(cn_nn_cellcount))
+        
+        cn_nn_cellfreq
+      })
+    
+    # cn_nn_cellfreq
+    # row: CellType; column: cell_id
+    cn_nn_cellfreq <- do.call(cbind, cn_nn_cellfreq_ls)
+    
+    cn_nn_cellfreq
+  })
+
+
+# construct CN by all slide
+
+# cn_cluster_ls <- map(2:20, ~ kmeans(t(cn_nn_cellfreq), centers = .x, iter.max = 1000))
+# cn_cluster_vrc <- map(cn_cluster_ls, ~ fpc::calinhara(t(cn_nn_cellfreq), .x$cluster)) # compute 方差比
+
+# plot(
+#   x = 2:20, 
+#   y = unlist(cn_cluster_vrc), 
+#   ylab = "Calinski-Harabasz index", 
+#   xlab = "Number of Clusters"
+# )
+
+# cluster_number <- 6
+
+cn_meta_data_ls <-
+  cn_nn_cellfreq_ls %>%
+  map(function(cn_nn_cellfreq){
+    set.seed(1234)
+    cn_cluster   <- kmeans(t(cn_nn_cellfreq), centers = k.cluster, iter.max = 1000)
+    cn_meta_data <- 
+      cn_cluster$cluster %>% 
+      enframe("cell_id", "CN") %>% 
+      column_to_rownames("cell_id") %>%
+      mutate(CN = str_c("CN", CN)) %>%
+      mutate(CN = factor(CN, levels = str_c("CN", sort(unique(cn_cluster$cluster)))))
+    
+    list(
+      cn_cluster   = cn_cluster, 
+      cn_meta_data = cn_meta_data
+    )
+  })
+
+
+# sc_anno2_cn <-
+#   sc_anno2 %>%
+#   AddMetaData(cn_meta_data)
+
+```
+
+
+```{r cn_heat, results='asis', echo=FALSE, fig.width=12, fig.height=6}
+
+p_cn_heat_ls <-
+  cn_meta_data_ls %>%
+  imap(function(x, name){
+    cn_cluster <- x$cn_cluster
+    cn_nn_cellfreq <- cn_nn_cellfreq_ls[[name]]
+    
+    # FoldChange cluster/allCell
+    cn_cluster_mean <- cn_cluster$centers
+    cn_baseMean     <- rowMeans(cn_nn_cellfreq)
+    
+    # log2(FC)
+    cn_cluster_FC <- log2(1 + sweep(cn_cluster_mean, MARGIN = 2, FUN = "/", STATS = cn_baseMean))
+    
+    # heatmap
+    p_cn_heat <-
+      pheatmap::pheatmap(
+        cn_cluster_FC,
+        color = colorRampPalette(c("navy", "white", "firebrick3"))(50),
+        border_color = NA,
+        treeheight_row = 0,
+        labels_row = str_c("CN", rownames(cn_cluster_FC), sep = "_"),
+        cluster_rows = T,
+        scale = "column",
+        silent = TRUE
+      )
+    p_cn_heat
+  })
+
+
+# export
+cat("#### CellNeighborhood CN celltype heatmap  {.unnumbered .tabshow} \n\n")
+
+p_cn_heat_ls %>%
+  iwalk(function(p, name){
+    cat(paste0("##### ", name, " {.unnumbered} \n\n"))
+    
+    grid::grid.newpage()
+    print(p)
+    
+    cat("\n\n")
+  })
+
+cat("\n\n")
+
+```
+
+
+<!-- 细胞社区原位空间图 -->
+```{r cn_spatial, results='asis', echo=FALSE, fig.height=12, fig.width=20 }
+sc_anno2_meta_cn_ls <-
+  cn_meta_data_ls %>%
+  map(function(x){
+    cn_meta_data <- x$cn_meta_data
+    
+    sc_meta <-
+      sc_anno2 %>%
+      AddMetaData(cn_meta_data) %>%
+      .[[]]  %>%
+      rownames_to_column("cell_id") 
+    
+    sc_meta
+  })
+
+ 
+
+cn_sp_p_ls <-
+  sc_anno2_meta_cn_ls %>%
+  imap(function(sc_meta, name){
+    sc_meta %>%
+    group_by(Slide_ID) %>%
+    nest() %>%
+    deframe() %>%
+    
+    imap(function(dat, name){
+      image_wh_r <-
+        dat[c('XMax', 'YMax')] %>%
+        map(quantile, c(0.01, 0.99)) %>% 
+        map(range) %>%
+        map(diff) %>%
+        {.[[1]]/.[[2]]}
+    
+      dat %>%
+        ggplot() +
+        geom_rect(aes(xmin = XMin, xmax = XMax, ymin = YMin, ymax = YMax, fill = CN)) +
+        scale_y_reverse() +
+        # coord_fixed(ratio = 1/image_wh_r) +
+        coord_equal() +
+        ggsci::scale_fill_igv() +
+        theme_void()
+    })
+  })
+  
+
+# export image
+cat("#### CellNeighborhood CN spatial plot  {.unnumbered .tabshow} \n\n")
+
+cn_sp_p_ls %>% 
+  flatDoubleList() %>%
+  iwalk(function(p, grp){
+    cat(paste0("##### ", grp, " {.unnumbered} \n\n"))
+    print(p)
+    cat("\n\n")
+  })
+
+cat("\n\n")
+```
+
+
+
+<!-- CN boxplot -->
+```{r cn_box, results='asis', echo=FALSE, fig.height=6, fig.width=10 }
+p_cn_box_ls <-
+  sc_anno2_meta_cn_ls  %>%
+  map(function(dat, name){
+    User_columns %>%
+      setNames(., .) %>%
+      map(function(x){
+        dat %>%
+          group_by(ID, .data[[x]], CN) %>%
+
+          dplyr::filter(!is.na(CN)) %>% # some cells not used to compute CN
+
+          summarise(count = n()) %>%
+          mutate(freq = count / sum(count)) %>%
+
+          ggplot(aes(x = CN, y = freq, fill = .data[[x]]) ) +
+          geom_boxplot() +
+          scale_y_continuous(labels = scales::percent) +
+          labs(
+            x = NULL,
+            y = "Cell Frequency (%)"
+          ) +
+          theme_classic()
+      })
+  })
+
+
+
+
+# export image
+cat("#### CellNeighborhood CN boxplot  {.unnumbered .tabshow} \n\n")
+
+p_cn_box_ls %>% 
+  iwalk(function(p_ls, grp){
+    cat(paste0("##### ", grp, " {.unnumbered} \n\n"))
+    
+      # print
+      p_ls %>%
+      iwalk(function(p, name){
+        cat(paste0("\n\n###### ", name, " {.unnumbered} \n\n"))
+        print(p)
+        cat("\n\n")
+      })
+    
+    cat("\n\n")
+  })
+
+cat("\n\n")
+
+```
+
+
+
+```{r, include=FALSE, eval=TRUE}
+
+if(!dir.exists("exportDat")){
+  dir.create("exportDat")
+}
+
+local({
+  sc <- sc_anno # cd_final %>% as("Seurat")
+  
+  c(
+    'meta_roi',
+    'meta_roi_uniq',
+    'User_columns',
+    "positive_df",
+    "positive_table_df",
+    # "annotation_df",
+    "positive_df_tidy",
+    'sc_anno2_meta_cn_ls',
+    "sc",
+    "sc2",
+    "sc_anno2"
+  
+  ) %>%
+    walk(function(name) {
+      tryCatch({
+        dat <- eval(as.name(name))
+        saveRDS(dat, file = str_glue("exportDat/{name}.rds"))
+      },
+      error = function(x) {
+        if (!file.exists(name))
+          cat(str_glue("{name} not exist...\n"))
+        cat(str_glue("{name} export fail...\n"))
+      })
+    })
+})
+
+
+```
+
+
+
+
+# 参考文献  
+
+
+1. Pourmaleki M, Jones CJ, Ariyan CE, Zeng Z, Pirun M, Navarrete DA, Li Y, Zhang
+M, Nandakumar S, Campos C, Nadeem S, Klimstra DS, Temple-Oberle CF, Brenn T,
+Lipson EJ, Schenk KM, Stein JE, Taube JM, White MG, Traweek R, Wargo JA,
+Kirkwood JM, Gasmi B, Goff SL, Corwin AD, McDonough E, Ginty F, Callahan MK,
+Schietinger A, Socci ND, Mellinghoff IK, Hollmann TJ. Tumor MHC Class I
+Expression Associates with Intralesional IL2 Response in Melanoma. Cancer
+Immunol Res. 2022 Mar 1;10(3):303-313. doi: 10.1158/2326-6066.CIR-21-1083. PMID:
+35013003; PMCID: PMC8898286.      
+
+
+2. Lindner AU, Salvucci M, McDonough E, Cho S, Stachtea X, O'Connell EP, Corwin
+AD, Santamaria-Pang A, Carberry S, Fichtner M, Van Schaeybroeck S, Laurent-Puig
+P, Burke JP, McNamara DA, Lawler M, Sood A, Graf JF, Rehm M, Dunne PD, Longley
+DB, Ginty F, Prehn JHM. An atlas of inter- and intra-tumor heterogeneity of
+apoptosis competency in colorectal cancer tissue at single-cell resolution. Cell
+Death Differ. 2022 Apr;29(4):806-817. doi: 10.1038/s41418-021-00895-9. Epub 2021
+Nov 9. PMID: 34754079; PMCID: PMC8990071.      
+
+
+3. Badve SS, Cho S, Gökmen-Polar Y, Sui Y, Chadwick C, McDonough E, Sood A,
+Taylor M, Zavodszky M, Tan PH, Gerdes M, Harris AL, Ginty F. Multi-protein
+spatial signatures in ductal carcinoma in situ (DCIS) of breast. Br J Cancer.
+2021 Mar;124(6):1150-1159. doi: 10.1038/s41416-020-01216-6. Epub 2021 Jan 7.
+PMID: 33414541; PMCID: PMC7961015.         
+
+
+4. Hurov K, Lahdenranta J, Upadhyaya P, Haines E, Cohen H, Repash E, Kanakia D,
+Ma J, Kristensson J, You F, Campbell C, Witty D, Kelly M, Blakemore S, Jeffrey
+P, McDonnell K, Brandish P, Keen N. BT7480, a novel fully synthetic
+<i>Bicycle</i> tumor-targeted immune cell agonist™ (<i>Bicycle</i> TICA™)
+induces tumor localized CD137 agonism. J Immunother Cancer. 2021
+Nov;9(11):e002883. doi: 10.1136/jitc-2021-002883. PMID: 34725211; PMCID:
+PMC8562524.    
+
+
+5. Oliva M, Chepeha D, Araujo DV, Diaz-Mejia JJ, Olson P, Prawira A, Spreafico
+A, Bratman SV, Shek T, de Almeida J, R Hansen A, Hope A, Goldstein D, Weinreb I,
+Smith S, Perez-Ordoñez B, Irish J, Torti D, Bruce JP, Wang BX, Fortuna A, Pugh
+TJ, Der-Torossian H, Shazer R, Attanasio N, Au Q, Tin A, Feeney J, Sethi H,
+Aleshin A, Chen I, Siu L. Antitumor immune effects of preoperative sitravatinib
+and nivolumab in oral cavity cancer: SNOW window-of-opportunity study. J
+Immunother Cancer. 2021 Oct;9(10):e003476. doi: 10.1136/jitc-2021-003476. PMID:
+34599023; PMCID: PMC8488751.       
+
+
+6. Uttam S, Stern AM, Sevinsky CJ, Furman S, Pullara F, Spagnolo D, Nguyen L,
+Gough A, Ginty F, Lansing Taylor D, Chakra Chennubhotla S. Spatial domain
+analysis predicts risk of colorectal cancer recurrence and infers associated
+tumor microenvironment networks. Nat Commun. 2020 Jul 14;11(1):3515. doi:
+10.1038/s41467-020-17083-x. PMID: 32665557; PMCID: PMC7360741.         
+
+
+7. Berens ME, Sood A, Barnholtz-Sloan JS, Graf JF, Cho S, Kim S, Kiefer J,
+Byron SA, Halperin RF, Nasser S, Adkins J, Cuyugan L, Devine K, Ostrom Q, Couce
+M, Wolansky L, McDonough E, Schyberg S, Dinn S, Sloan AE, Prados M, Phillips JJ,
+Nelson SJ, Liang WS, Al-Kofahi Y, Rusu M, Zavodszky MI, Ginty F. Multiscale,
+multimodal analysis of tumor heterogeneity in IDH1 mutant vs wild-type diffuse
+gliomas. PLoS One. 2019 Dec 27;14(12):e0219724. doi:
+10.1371/journal.pone.0219724. PMID: 31881020; PMCID: PMC6934292.         
+
+
+8. Bockorny B, Semenisty V, Macarulla T, Borazanci E, Wolpin BM, Stemmer SM,
+Golan T, Geva R, Borad MJ, Pedersen KS, Park JO, Ramirez RA, Abad DG, Feliu J,
+Muñoz A, Ponz-Sarvise M, Peled A, Lustig TM, Bohana-Kashtan O, Shaw SM, Sorani
+E, Chaney M, Kadosh S, Vainstein Haras A, Von Hoff DD, Hidalgo M. BL-8040, a
+CXCR4 antagonist, in combination with pembrolizumab and chemotherapy for
+pancreatic cancer: the COMBAT trial. Nat Med. 2020 Jun;26(6):878-885. doi:
+10.1038/s41591-020-0880-x. Epub 2020 May 25. PMID: 32451495.       
+
+
+9. Xu-Monette ZY, Xiao M, Au Q, Padmanabhan R, Xu B, Hoe N, Rodríguez-Perales S,
+Torres-Ruiz R, Manyam GC, Visco C, Miao Y, Tan X, Zhang H, Tzankov A, Wang J,
+Dybkær K, Tam W, You H, Bhagat G, Hsi ED, Ponzoni M, Ferreri AJM, Møller MB,
+Piris MA, van Krieken JH, Winter JN, Westin JR, Pham LV, Medeiros LJ, Rassidakis
+GZ, Li Y, Freeman GJ, Young KH. Immune Profiling and Quantitative Analysis
+Decipher the Clinical Role of Immune-Checkpoint Expression in the Tumor Immune
+Microenvironment of DLBCL. Cancer Immunol Res. 2019 Apr;7(4):644-657. doi:
+10.1158/2326-6066.CIR-18-0439. Epub 2019 Feb 11. PMID: 30745366.      
+
+
+10. Chiocca EA, Yu JS, Lukas RV, Solomon IH, Ligon KL, Nakashima H, Triggs DA,
+Reardon DA, Wen P, Stopa BM, Naik A, Rudnick J, Hu JL, Kumthekar P, Yamini B,
+Buck JY, Demars N, Barrett JA, Gelb AB, Zhou J, Lebel F, Cooper LJN. Regulatable
+interleukin-12 gene therapy in patients with recurrent high-grade glioma:
+Results of a phase 1 trial. Sci Transl Med. 2019 Aug 14;11(505):eaaw5680. doi:
+10.1126/scitranslmed.aaw5680. PMID: 31413142; PMCID: PMC7286430.      
+
+
+11. Gerdes MJ, Gökmen-Polar Y, Sui Y, Pang AS, LaPlante N, Harris AL, Tan PH,
+Ginty F, Badve SS. Single-cell heterogeneity in ductal carcinoma in situ of
+breast. Mod Pathol. 2018 Mar;31(3):406-417. doi: 10.1038/modpathol.2017.143.
+Epub 2017 Nov 17. PMID: 29148540; PMCID: PMC6192037.         
+
+
+12. Ribas A, Dummer R, Puzanov I, VanderWalde A, Andtbacka RHI, Michielin O,
+Olszanski AJ, Malvehy J, Cebon J, Fernandez E, Kirkwood JM, Gajewski TF, Chen L,
+Gorski KS, Anderson AA, Diede SJ, Lassman ME, Gansert J, Hodi FS, Long GV.
+Oncolytic Virotherapy Promotes Intratumoral T Cell Infiltration and Improves
+Anti-PD-1 Immunotherapy. Cell. 2018 Aug 9;174(4):1031-1032. doi:
+10.1016/j.cell.2018.07.035. Erratum for: Cell. 2017 Sep 7;170(6):1109-1119.e10.
+PMID: 30096300.       
+
+
+13. Clarke GM, Zubovits JT, Shaikh KA, Wang D, Dinn SR, Corwin AD, Santamaria-
+Pang A, Li Q, Nofech-Mozes S, Liu K, Pang Z, Filkins RJ, Yaffe MJ. A novel,
+automated technology for multiplex biomarker imaging and application to breast
+cancer. Histopathology. 2014 Jan;64(2):242-55. doi: 10.1111/his.12240. Epub 2013
+Nov 5. PMID: 24330149.      
+
+
+14. Li C, Ma H, Wang Y, Cao Z, Graves-Deal R, Powell AE, Starchenko A, Ayers GD,
+Washington MK, Kamath V, Desai K, Gerdes MJ, Solnica-Krezel L, Coffey RJ. Excess
+PLAC8 promotes an unconventional ERK2-dependent EMT in colon cancer. J Clin
+Invest. 2014 May;124(5):2172-87. doi: 10.1172/JCI71103. Epub 2014 Apr 1. PMID:
+24691442; PMCID: PMC4001536.         
+
+
+
+
+<!-- css for toc -->
+```{css, echo=FALSE}
+/*TOC*/
+#TOC{
+    border-radius: 0px;
+    font-size: 1.4rem;
+}
+#TOC > p{
+    text-align: center;
+    background: rgba(55,126,184,1);
+    padding: 5px 0px;
+    color:white;
+}
+
+.list-group-item.active, 
+.list-group-item.active:hover, 
+.list-group-item.active:focus {
+    background-color: rgba(55,126,184,0.8);
+}
+
+.list-group-item:hover, 
+.list-group-item:focus {
+    background-color: rgba(55,126,184,0.5);
+    color:white;
+}
+
+```
+
+<!-- css for font -->
+```{css, echo=FALSE}
+body .main-container {    
+    max-width: 1500px;    
+    margin-left: 100px;   
+    margin-right: 100px;
+} 
+
+td{ 
+    font-size: 15px; 
+    text-align: center; 
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+}
+
+th{ 
+    font-size: 15px;
+    text-align: center;
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+    font-weight: 600;
+} 
+
+h1{ 
+    font-size: 25px;
+    font-weight: 600;
+    color: #377EB8; 
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+}
+
+h2{ 
+    font-size: 22px;
+    font-weight: 600; 
+    color: #377EB8; 
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+} 
+
+h3{ 
+    font-size: 20px;
+    font-weight: 600; 
+    color: #377EB8; 
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+} 
+
+h4{ 
+    font-size: 18px; 
+    font-weight: 600;
+    color: #377EB8; 
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+} 
+
+h5{  
+    line-height: 200%;  
+    text-align: center; 
+    font-weight: 600; 
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+} 
+
+img{    
+    margin-left: auto;   
+    margin-right:auto;    
+    display:block;
+}
+
+p{    
+    line-height: 180%;    
+    font-family: "Times","Microsoft YaHei","黑体","SimHei","宋体","SimSun","sans-serif";
+    text-align: justify;    
+    font-size: 15px;
+}
+```
+
+<!-- css for tabshow and tabset-diy -->
+```{css, echo=FALSE}
+/*tab show*/
+select{
+    padding: 5px;
+    padding-right: 20px;
+    margin-bottom: 20px;
+    margin-right: 5%;
+/*    float: left; */
+}
+select:hover{
+    box-shadow: 0px 0px 2px 2px #AAB2D1;
+    cursor: pointer;
+}
+p::before{ /*清除浮动的影响*/
+    content: "";
+    display: block;
+    clear: both;
+}
+
+.tabclear::after{
+    content: '';
+    display: block;
+    clear: both;
+}
+
+/*tabset diy*/
+.tab-ul{
+    margin: 0px;
+    padding: 0px;
+    padding-top:10px;
+}
+
+.tab-ul::before, .tab-ul::after{
+    content: '';
+    clear: both;
+    display: block;
+}
+
+.tab-li{
+    padding: 4px 20px;
+    margin-right: 3px;
+    list-style: none;
+    background: #eee;
+    cursor: pointer;
+    float: left;
+    transition: background 0.5s;
+}
+.tab-li.active{
+    border-top: 3px solid #8d95aa;
+    border-left: 1px solid #8d95aa;
+    border-right: 1px solid #8d95aa;
+    background: white;
+    padding: 6px 20px;
+    margin-bottom: -1px;
+}
+
+.tab-li:hover{
+    background: #bbc1da;
+}
+
+.tabset-diy .section{
+    border: 1px solid #8d95aa;
+}
+```
+
+
+
+
+<!-- 目录内容调整 -->
+```{js, echo=FALSE}
+var clock;
+$(function(){
+  clock = setTimeout(() => {
+    $('#TOC').prepend('<p style="font-size:1.6rem;">目录</p>')
+    clearTimeout(clock);
+  }, 1)
+})
+
+```
+
+
+<!-- 折叠布局，tabshow控制 兼容ie-->
+```{js, echo = FALSE}
+$(function(){
+
+  // 所有需要折叠子元素的div，class有tabshow
+  var tabs = $('.tabshow');
+  
+  for(var i =0; i < tabs.length; i++){
+    var tablist,  // 需要折叠的子元素div
+        id_list,  // 折叠div的id
+        text_list; // 折叠div的text，用于select的option中显示
+    
+    tablist = tabs.eq(i).children('.section');
+    if(tablist.length < 2) {continue;}
+    
+    id_list = tablist.map(function(){ return '#' + $(this).attr('id') }).get();
+    text_list = tablist.map(function(){ return $(this).children(':not("div")').eq(0).hide().text() });
+    text_list = text_list.map(function(){ return this.replace(/^[0-9]+(\.[0-9]+)*\s{1}/g, '') }).get();
+    
+    // 构造select元素
+    var select = $('<select>').attr('id', 'tab-select' + i);
+    for(var j=0; j < id_list.length; j++){
+      var op = $('<option>').attr('value', id_list[j]).text(text_list[j]);
+      if(j === 0){
+        op = op.attr('selected', 'selected');
+      }
+      select.append(op);
+    }
+    
+    // select使用一个div包裹
+    select = $('<div>').append(select);
+    // 如果有clear类属性，则将select的父div加上clear属性
+    var className = tablist.eq(0).attr('class');
+    if(/clear/.test(className)){
+      select.addClass('tabclear')
+    }
+    // 将select嵌入DOM中
+    tablist.eq(0).before(select);
+    
+    // 初始化，默认显示第一个子元素div，其他隐藏
+    $(id_list[0]).show().siblings('.section').hide();
+    
+    // 绑定select的change事件，动态改变div的显隐
+    $('#'+'tab-select' + i).change(function(){
+      var val = $(this).val();
+      $(val).show().siblings('.section').hide();
+    })
+  }
+
+})
+
+
+```
+
+<!-- 自定义tabset（默认tabset无法作用于h6之后的标题） 兼容ie-->
+```{js, echo = FALSE}
+$(function(){
+
+  // 所有需要折叠子元素的div，class有tabset-diy
+  var tabs = $('.tabset-diy');
+  
+  for(var i = 0; i < tabs.length; i++){
+    var tablist,  // 需要折叠的子元素div
+        id_list,  // 折叠div的id
+        text_list; // 折叠div的text，用于select的option中显示
+    
+    tablist = tabs.eq(i).children('.section');
+    if(tablist.length < 2) {continue;}
+    
+    id_list = tablist.map(function() { return '#' + $(this).attr('id') }).get();
+    text_list = tablist.map(function(){ return $(this).children().eq(0).hide().text(); });
+    text_list = text_list.map(function(){ return this.replace(/^[0-9]+(\.[0-9]+)*\s{1}/g, '') }).get();
+    
+    // 构造ul元素
+    var ul = $('<ul>').attr('id', 'tab-ul' + i).addClass('tab-ul');
+    for(var j=0; j < id_list.length; j++){
+      var li = $('<li>').addClass('tab-li')
+                        .attr('data-item', id_list[j])
+                        .text(text_list[j]);
+      if(j === 0){
+        li = li.addClass('active');
+      }
+      ul.append(li);
+    }
+    
+    // 将select嵌入DOM中
+    tablist.eq(0).before(ul);
+    
+    // 初始化，默认显示第一个子元素div，其他隐藏
+    $(id_list[0]).show().siblings('.section').hide();
+    
+    // 绑定ul的li的click事件，动态改变div的显隐
+    $('#'+'tab-ul' + i + ' > li').click(function(){
+      // li的active class改变
+      $(this).addClass('active').siblings().removeClass('active')
+      // li对应的div的显隐
+      var item = $(this).attr('data-item');
+      $(item).show().siblings('.section').hide();
+    })
+  }
+
+})
+
+
+```
+

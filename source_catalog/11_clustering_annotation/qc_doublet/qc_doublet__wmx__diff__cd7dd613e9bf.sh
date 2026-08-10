@@ -1,0 +1,1 @@
+python /mnt/NexData_file/home/wmx/Project/SC2601290784//Diff_and_enrichment.py --input_file /mnt/NexData_file/home/wmx/Project/SC2601290784/20260429/subcluster/All/All_delele_Doublets.h5ad --out_dir /mnt/NexData_file/home/wmx/Project/SC2601290784/20260429/subcluster/All/Diff/ --species 'mouse' --group_col 'group'

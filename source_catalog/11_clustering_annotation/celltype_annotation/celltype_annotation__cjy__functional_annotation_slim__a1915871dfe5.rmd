@@ -1,0 +1,137 @@
+### 3.5 常用功能数据库注释
+
+&emsp;&emsp;目前常用的功能数据库主要有：
+
+&emsp;&emsp;1. **Kyoto Encyclopedia of Genes and Genomes （KEGG）**<sup>[23]</sup>：KEGG数据库于 1995 年由Kanehisa Laboratories推出0.1版，目前发展为一个综合性数据库，其中最核心的为KEGG PATHWAY和KEGG ORTHOLOGY数据库。在KEGG ORTHOLOGY数据库中，将行使相同功能的基因聚在一起，称为Ortholog Groups（KO entries），每个 KO 包含多个基因信息，并在一至多个pathway中发挥作用。而在KEGG PATHWAY数据库中，将生物代谢通路划分为6类，分别为：细胞过程（Cellular Processes）、环境信息处理（Environmental Information Processing）、遗传信息处理（Genetic Information Processing）、人类疾病（Human Diseases）、新陈代谢（Metabolism）、生物体系统（Organismal Systems），其中每类又被系统分类为二、三、四层。第二层目前包括有 57个种子pathway；第三层即为其代谢通路图；第四层为每个代谢通路图的具体注释信息；
+
+&emsp;&emsp;2. **Carbohydrate-Active enzymes Database（CAZy）**<sup>[24]</sup>：CAZy数据库是研究碳水化合物酶的专业级数据库，主要涵盖6大功能类：糖苷水解酶（Glycoside Hydrolases ，GHs），糖基转移酶（Glycosyl Transferases，GTs），多糖裂合酶（Polysaccharide Lyases，PLs），碳水化合物酯酶（Carbohydrate Esterases，CEs），辅助氧化还原酶（Auxiliary Activities，AAs）和碳水化合物结合模块（Carbohydrate-Binding Modules，CBMs）；
+
+&emsp;&emsp;3. **Cluster of Orthologous Groups of proteins（COG）**<sup>[25]</sup>：COG数据库是由NCBI创建并维护的蛋白数据库，根据细菌、藻类和真核生物完整基因组的编码蛋白系统进化关系分类构建而成。通过比对可以将某个蛋白序列注释到某一个COG中，每一簇COG由直系同源序列构成，从而可以推测该序列的功能。COG数据库按照功能一共可以分为二十六类。
+
+&nbsp;
+
+#### 3.5.1 功能注释基本步骤
+
+&emsp;&emsp;1. 运用eggnog-mapper<sup>[26]</sup>软件（基于DIAMOND<sup>[27]</sup>），将去冗余基因蛋白序列（对应去冗余基因核酸序列）比对到EggNOG<sup>[28]</sup>数据库，得到蛋白的KEGG，CAZy和COG的注释信息；
+
+&emsp;&emsp;2. 从比对结果出发，统计不同功能层级的相对丰度（各功能层级的相对丰度等于注释为该功能层级的去冗余基因的相对丰度之和），其中，KEGG 数据库划分为4个层级，CAZy数据库划分为1个层级，COG数据库划分为1个层级，各数据库的详细划分层级如下所示：
+
+<center>
+<style type="text/css">
+.tg  {border:none;border-collapse:collapse;border-color:#9ABAD9;border-spacing:0;}
+.tg td{background-color:#EBF5FF;border-color:#9ABAD9;border-style:solid;border-width:0px;color:#444;
+  font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 20px;word-break:normal;}
+.tg th{background-color:#409cff;border-color:#9ABAD9;border-style:solid;border-width:0px;color:#fff;
+  font-family:Arial, sans-serif;font-size:14px;font-weight:normal;overflow:hidden;padding:10px 20px;word-break:normal;}
+.tg .tg-9ab4{background-color:#d2e4fc;border-color:inherit;text-align:center;vertical-align:top}
+.tg .tg-c3ow{border-color:inherit;text-align:center;vertical-align:top}
+.tg .tg-uhj2{background-color:#377EB8;border-color:inherit;font-weight:bold;text-align:center;vertical-align:top}
+.tg .tg-svo0{background-color:#D2E4FC;border-color:inherit;text-align:center;vertical-align:top}
+.tg .tg-ghie{background-color:#d2e4fc;border-color:inherit;color:#3E3A39;text-align:center;vertical-align:top}
+.tg .tg-sa29{background-color:#ebf5ff;border-color:inherit;text-align:center;vertical-align:top}
+.tg .tg-p5fr{background-color:#ebf5ff;border-color:inherit;color:#3E3A39;text-align:center;vertical-align:top}
+</style>
+<table class="tg" style="undefined;table-layout: fixed; width: 730px">
+<colgroup>
+<col style="width: 131.090909px">
+<col style="width: 111.090909px">
+<col style="width: 488.090909px">
+</colgroup>
+<thead>
+  <tr>
+    <th class="tg-uhj2">数据库名称</th>
+    <th class="tg-uhj2">划分层级</th>
+    <th class="tg-uhj2">该层级的描述</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-svo0">KEGG</td>
+    <td class="tg-svo0">KO</td>
+    <td class="tg-svo0">[<span style="font-weight:bold">KEGG_KO</span>] KEGG ortholog group（例：K00010）</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">KEGG</td>
+    <td class="tg-c3ow">level1</td>
+    <td class="tg-c3ow">[<span style="font-weight:bold">KEGG_level1</span>] KEGG代谢通路第一层级6大代谢通路</td>
+  </tr>
+  <tr>
+    <td class="tg-9ab4">KEGG</td>
+    <td class="tg-9ab4">level2</td>
+    <td class="tg-ghie">[<span style="font-weight:bold">KEGG_level2</span>] KEGG代谢通路第二层级57种子pathway</td>
+  </tr>
+  <tr>
+    <td class="tg-sa29">KEGG</td>
+    <td class="tg-sa29">level3</td>
+    <td class="tg-p5fr">[<span style="font-weight:bold">KEGG_level3</span>] KEGG pathway id（例：ko00010）</td>
+  </tr>
+  <tr>
+    <td class="tg-9ab4">CAZy</td>
+    <td class="tg-9ab4"></td>
+    <td class="tg-ghie">[<span style="font-weight:bold">CAZy</span>] CAZy family（例：GT51）</td>
+  </tr>
+  <tr>
+    <td class="tg-c3ow">COG</td>
+    <td class="tg-c3ow"></td>
+    <td class="tg-c3ow">[<span style="font-weight:bold">COG_category</span>] COG数据库26类功能</td>
+  </tr>
+</tbody>
+</table>
+<center>&nbsp;</center>
+
+&emsp;&emsp;3. 从功能注释结果及非冗余基因定量TPM结果出发，获得各个样本在各个功能数据库不同层级上的绝对（absolute）和相对（relative）丰度信息度；
+
+&emsp;&emsp;4. 从各个功能数据库不同层级上的丰度表出发，进行丰度概况展示，丰度聚类分析，PCA、NMDS和PCoA降维分析，Anosim组间差异分析，组间功能差异LEfSe分析。
+
+<center>&nbsp;</center>
+
+&emsp;&emsp;**结果文件：**
+
+- 所有Unigene的eggnog-mapper功能注释结果文件：results/05.functional_annotation/eggnog-mapper/unigene.emapper.annotations；
+- 各个功能数据库不同层级上的绝对丰度表: results/05.functional_annotation/abundance/absolute/unigene.\*.absolute.xls；
+- 各个功能数据库不同层级上的相对丰度表: results/05.functional_annotation/abundance/relative/unigene.\*.relative.xls。
+
+&nbsp;
+
+#### 3.5.2 功能丰度概况
+
+&emsp;&emsp;从各个功能数据库不同层级上的相对丰度表出发，选取出在各样本中的最大相对丰度排名前10的注释结果，绘制出相对丰度柱形图，如下所示：
+
+#####  {- .toc-ignore .tabset .tabset-dropdown}
+
+```{r, echo=FALSE, results='asis'}
+
+func_order <- c("KEGG_KO", "KEGG_level1", "KEGG_level2", "KEGG_level3", "CAZy", "COG_category")
+contrast_list <- basename(Sys.glob(file.path(params$func_barplot_dir, "*")))
+sort_contrast_list <- contrast_list[order(lengths(strsplit(contrast_list, "-vs-")))]
+
+func_level_list <- basename(Sys.glob(file.path(params$func_barplot_dir, "*")))
+func_level_list <- func_level_list[order(match(func_level_list, func_order))]
+
+for (contrast in sort_contrast_list) {
+  sample_barplot_files <- Sys.glob(file.path(params$func_barplot_dir, contrast, "*.barplot.png"))
+  sample_barplot_files <- sample_barplot_files[!grepl("\\.group\\.barplot\\.png$", sample_barplot_files)]
+  func_level_list <- gsub(".*\\.top.*\\.", "", gsub(".barplot.png", "", basename(sample_barplot_files)))
+  func_level_list <- func_level_list[order(match(func_level_list, func_order))]
+  for (func in func_level_list) {
+    pic <- Sys.glob(file.path(params$func_barplot_dir, contrast, glue("{contrast}.top*.{func}.barplot.png")))
+    pic <- pic[!grepl("\\.group\\.barplot\\.png$", pic)]
+    cat("###### ", contrast, " - ", func, " \n")
+    cat("\n")
+    cat("![](", pic, "){width=70%}", "\n")
+    cat("<center>**图3.5.2-1 功能相对丰度柱形图**</center>", "\n")
+    cat("<center>&nbsp;</center>", "\n")
+    cat("<center>**说明** 横轴表示样本名称；纵轴表示功能注释结果的相对比例；各颜色区块对应的功能注释结果见右侧图例。</center>", "\n")
+    cat("<center>&nbsp;<center>", "\n")
+    cat("\n")
+  }
+}
+
+```
+
+##### {- .toc-ignore}
+
+&emsp;&emsp;**结果文件：**
+
+- 样本水平的top10功能注释结果相对丰度柱形图和表格: results/05.functional_annotation/barplot/\*/\*.top10.\*.barplot.{pdf,png,xls}；
+- 分组水平的top10功能注释结果相对丰度柱形图和表格: results/05.functional_annotation/barplot/\*/\*.top10.\*.group.barplot.{pdf,png,xls}。

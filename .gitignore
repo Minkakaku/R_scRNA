@@ -1,14 +1,16 @@
-# Raw and processed data
-data/*
-!data/.gitkeep
-
-# Analysis outputs
-results/*
-!results/.gitkeep
-logs/*
-!logs/.gitkeep
-docs/reports/*
-!docs/reports/.gitkeep
+# Project data and generated outputs
+projects/*/data/raw/*
+!projects/*/data/raw/.gitkeep
+projects/*/data/processed/*
+!projects/*/data/processed/.gitkeep
+projects/*/data/reference/*
+!projects/*/data/reference/.gitkeep
+projects/*/results/*
+!projects/*/results/.gitkeep
+projects/*/logs/*
+!projects/*/logs/.gitkeep
+projects/*/docs/reports/*
+!projects/*/docs/reports/.gitkeep
 
 # Large single-cell files
 *.bam

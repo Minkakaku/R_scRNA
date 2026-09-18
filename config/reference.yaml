@@ -1,0 +1,13 @@
+# Shared broad-cell marker reference; projects may override or extend it.
+broad_marker_genes:
+  Epithelial: [EPCAM, KRT18, KRT19]
+  Endothelial: [PECAM1, CLDN5, FLT1]
+  Fibroblast: [COL1A1, DCN, PDGFRA]
+  Myeloid: [TYROBP, AIF1, LST1]
+  T_cell: [CD3D, CD3E, TRAC]
+  NK: [NKG7, KLRD1, GNLY]
+  B_cell: [CD79A, MS4A1, CD74]
+  Plasma: [JCHAIN, MZB1, SDC1]
+  Mast: [MS4A2, KIT, CPA3]
+  Pericyte: [RGS5, PDGFRB, CSPG4]
+  SMC: [ACTA2, TAGLN, MYH11]

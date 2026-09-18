@@ -1,0 +1,8 @@
+# project1 overrides matching keys from the root configuration.
+group_levels: [CON, EXP]
+proportion_comparisons:
+  - [CON, EXP]
+
+# Broad cell types to re-cluster in this project.
+subcluster:
+  target_celltype: [Monocyte, Macrophage]

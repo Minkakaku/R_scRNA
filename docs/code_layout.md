@@ -1,11 +1,12 @@
 # 代码分层
 
-`src/00_runtime.R` 到 `src/12_visualization.R` 是底层通用函数；`src/steps/` 把底层函数组合成可直接调用的分析点；`workflow/` 记录当前项目在哪一天、以什么顺序实际调用了哪些分析点。
+`src/R/00_runtime.R` 到 `12_visualization.R` 是底层通用函数；`src/R/steps/` 将它们组合为分析点；`projects/<项目>/workflow/` 只记录某个项目实际调用的顺序。
 
-新增代码时按下面判断：
+新增内容时按下面判断：
 
-- 换一个项目仍然成立：放 `src/`。
-- 只与当前项目的 cluster、marker、对象或人工判断有关：放新的 workflow 步骤。
-- 只是参数变化：放 `config/config.R`。
+- 换一个项目仍成立：放 `src/R/`。
+- 所有项目共用的参数或 marker：放根目录 `config/`。
+- 只属于当前项目的分组、阈值、cluster、marker 或人工判断：放项目 `config/` 或新的 workflow 步骤。
+- 中间对象放项目 `data/processed/`；最终图表放项目 `results/`。
 
-不要把生成的数据对象、图片或表格放进 `src/`。
+不要把数据对象、图片、表格或内部绝对路径放进 `src/R/`。

@@ -124,33 +124,46 @@ merge_samples <- function(obj_list) {
   merge(obj_list[[1]], y = obj_list[-1], add.cell.ids = names(obj_list))
 }
 
+# 双细胞类别采用固定语义配色；过滤后只剩 singlet 时仍为蓝色。
+plot_qc_doublet_ratio <- function(metadata, sample_col = "orig.ident", class_col = "doublet_class") {
+  stopifnot(all(as.character(metadata[[class_col]]) %in% c("singlet", "doublet")))
+  ggplot(metadata, aes(.data[[sample_col]], fill = .data[[class_col]])) +
+    geom_bar(position = "fill", show.legend = TRUE) +
+    scale_fill_manual(values = c(singlet = "#4DBBD5", doublet = "#E64B35"),
+      limits = c("singlet", "doublet"), drop = FALSE) +
+    scale_y_continuous(labels = scales::percent) +
+    labs(x = NULL, y = "Cell proportion", fill = NULL) + theme_classic() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
 # 构造基因数、UMI、线粒体等 QC 图，并按已有列附加双细胞与污染图。
 make_qc_plots <- function(obj) {
+  sample_levels <- if (is.factor(obj$orig.ident)) levels(droplevels(obj$orig.ident)) else sort(unique(obj$orig.ident))
+  obj$orig.ident <- factor(obj$orig.ident, levels = sample_levels)
+  palette <- npg_palette(sample_levels)
   plots <- list(
     violin = VlnPlot(
       obj,
       features = c("nFeature_RNA", "nCount_RNA", "percent.mt", "percent.hb", "log10GenesPerUMI"),
       ncol = 5,
-      pt.size = 0.1
+      pt.size = 0, group.by = "orig.ident", cols = unname(palette), raster = FALSE
     ),
-    scatter_gene_umi = FeatureScatter(obj, "nCount_RNA", "nFeature_RNA"),
-    scatter_mt = FeatureScatter(obj, "nCount_RNA", "percent.mt"),
-    cells_per_sample = ggplot(obj@meta.data, aes(orig.ident)) +
-      geom_bar() +
+    scatter_gene_umi = FeatureScatter(obj, "nCount_RNA", "nFeature_RNA", group.by = "orig.ident", cols = unname(palette), raster = FALSE),
+    scatter_mt = FeatureScatter(obj, "nCount_RNA", "percent.mt", group.by = "orig.ident", cols = unname(palette), raster = FALSE),
+    cells_per_sample = ggplot(obj@meta.data, aes(orig.ident, fill = orig.ident)) +
+      geom_bar(width = 0.75) + scale_fill_manual(values = palette, guide = "none") +
+      labs(x = NULL, y = "Cell count") +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
   )
 
   if ("doublet_class" %in% colnames(obj@meta.data)) {
-    plots$doublet_ratio <- ggplot(obj@meta.data, aes(orig.ident, fill = doublet_class)) +
-      geom_bar(position = "fill") +
-      scale_y_continuous(labels = percent) +
-      theme_classic() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    plots$doublet_ratio <- plot_qc_doublet_ratio(obj@meta.data)
   }
 
   if ("Contamination" %in% colnames(obj@meta.data)) {
-    plots$contamination <- VlnPlot(obj, features = "Contamination", group.by = "orig.ident", pt.size = 0) +
+    plots$contamination <- VlnPlot(obj, features = "Contamination", group.by = "orig.ident", pt.size = 0,
+      cols = unname(palette), raster = FALSE) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
   }
 

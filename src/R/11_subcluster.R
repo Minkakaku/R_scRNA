@@ -76,7 +76,7 @@ run_subcluster_clustering <- function(obj) {
   pca_settings <- valid_cluster_dims(obj, SUBCLUSTER$npcs, SUBCLUSTER$dims)
   obj <- run_step("Subcluster RunPCA", RunPCA(obj, npcs = pca_settings$npcs, verbose = FALSE))
   save_pca_elbow(obj, file.path(SUBCLUSTER_DIR, "PCA_elbow"))
-  save_umap_plot(DimPlot(run_step("Subcluster raw RunUMAP", RunUMAP(obj, reduction = "pca", dims = pca_settings$dims)),
+  save_umap_plot(npg_dimplot(run_step("Subcluster raw RunUMAP", RunUMAP(obj, reduction = "pca", dims = pca_settings$dims)),
     group.by = "samples", pt.size = 0.2), file.path(SUBCLUSTER_DIR, "UMAP_raw_by_sample"))
   corrected <- run_batch_correction(obj, SUBCLUSTER, SUBCLUSTER, "Subcluster")
   obj <- corrected$object

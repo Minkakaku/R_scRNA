@@ -39,7 +39,7 @@ save_pca_elbow <- function(obj, path_no_ext, reduction = "pca") {
   write.csv(result$variance, paste0(path_no_ext, "_variance.csv"), row.names = FALSE, quote = FALSE)
   write.csv(result$selections, paste0(path_no_ext, "_selection.csv"), row.names = FALSE, quote = FALSE)
 
-  method_colors <- c(PCAtools = "#B2182B", nFactors_noc = "#2166AC", nFactors_naf = "#f6ae00")
+  method_colors <- c(PCAtools = HONGF_NPG[1], nFactors_noc = HONGF_NPG[4], nFactors_naf = HONGF_NPG[3])
   p <- ggplot(result$variance, aes(pc, variance_percent)) +
     geom_line(linewidth = 0.55, color = "#4D4D4D") +
     geom_point(size = 1.6, color = "#4D4D4D") +
@@ -53,12 +53,11 @@ save_pca_elbow <- function(obj, path_no_ext, reduction = "pca") {
       x = "Principal component",
       y = "Explained variance (%)",
       title = "PCA variance and automatic elbow",
-      subtitle = paste0("PCAtools recommendation: PC", result$recommended_pc),
       color = NULL,
       linetype = NULL
     ) +
     theme_classic(base_size = 13) +
-    theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
+    theme(plot.title = element_text(hjust = 0.5))
   save_plot(p, path_no_ext)
   log_msg(
     "Automatic PCA elbow: ",

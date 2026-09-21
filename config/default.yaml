@@ -73,7 +73,7 @@ contamination_umap:
   min_cutoff: 0
   legend_max: 1
   point_size: 0.2
-  colors: ["#FFEFD5", "#E6E6FA", "#87CEFA", "#6495ED", "#4169E1", "#0000CD", "#000080"]
+  colors: ["#FFF5F0", "#F39B7F", "#E64B35", "#7A0019"]
 
 marker_params:
   only_pos: true

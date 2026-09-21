@@ -11,13 +11,13 @@ save_batch_effect_umap_outputs <- function(sc) {
     xlim <- range(coordinates[, 1])
     ylim <- range(coordinates[, 2])
 
-    p_sample <- DimPlot(
+    p_sample <- npg_dimplot(
       sc,
       reduction = reduction,
       group.by = sample_col,
       pt.size = BATCH_EFFECT_UMAP$point_size,
-      raster = TRUE
-    ) + ggtitle(gsub("_", " ", stage))
+      raster = FALSE
+    )
     save_umap_plot(
       p_sample,
       file.path(GLOBAL_DIR, paste0("UMAP_", stage, "_by_sample")),
@@ -25,14 +25,14 @@ save_batch_effect_umap_outputs <- function(sc) {
       ylim = ylim
     )
 
-    p_split <- DimPlot(
+    p_split <- npg_dimplot(
       sc,
       reduction = reduction,
       group.by = "seurat_clusters",
       split.by = sample_col,
       ncol = BATCH_EFFECT_UMAP$split_ncol,
       pt.size = BATCH_EFFECT_UMAP$split_point_size,
-      raster = TRUE
+      raster = FALSE
     )
     save_umap_plot(
       p_split,
@@ -88,7 +88,7 @@ save_contamination_umap_output <- function(sc) {
     features = "Contamination",
     pt.size = CONTAMINATION_UMAP$point_size,
     order = TRUE,
-    raster = TRUE,
+    raster = FALSE,
     min.cutoff = CONTAMINATION_UMAP$min_cutoff,
     max.cutoff = legend_max,
     cols = CONTAMINATION_UMAP$colors[c(1, length(CONTAMINATION_UMAP$colors))]
@@ -98,12 +98,7 @@ save_contamination_umap_output <- function(sc) {
     breaks = seq(CONTAMINATION_UMAP$min_cutoff, legend_max, by = 0.25),
     labels = scales::label_number(accuracy = 0.01),
     oob = scales::squish
-  ) + labs(
-    title = sprintf("Contamination after QC (cutoff < %.2f)", threshold),
-    subtitle = sprintf("Median %.3f | P95 %.3f | all %s cells below cutoff",
-      summary_table$median, summary_table$p95, format(summary_table$cells, big.mark = ",")),
-    color = "Contamination"
-  )
+  ) + labs(color = "Contamination")
   save_umap_plot(p, file.path(GLOBAL_DIR, "Feature_Contamination"))
   invisible(p)
 }
@@ -132,7 +127,7 @@ save_global_clustering_outputs <- function(sc) {
   write.csv(coverage, file.path(GLOBAL_DIR, "cluster_sample_coverage.csv"), row.names = FALSE, quote = FALSE)
   write.csv(parameters, file.path(GLOBAL_DIR, "clustering_parameters.csv"), row.names = FALSE, quote = FALSE)
 
-  save_umap_plot(DimPlot(sc, label = TRUE, repel = TRUE), file.path(GLOBAL_DIR, "UMAP_clusters"))
+  save_umap_plot(npg_dimplot(sc, label = TRUE, repel = TRUE), file.path(GLOBAL_DIR, "UMAP_clusters"))
   save_batch_effect_umap_outputs(sc)
   save_contamination_umap_output(sc)
 

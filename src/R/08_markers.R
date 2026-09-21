@@ -67,7 +67,8 @@ save_broad_marker_dotplot <- function(sc) {
   broad_markers <- lapply(BROAD_MARKER_GENES, function(x) intersect(x, rownames(sc)))
   broad_markers <- broad_markers[lengths(broad_markers) > 0]
   if (length(broad_markers) > 0) {
-    save_plot(DotPlot(sc, features = broad_markers, assay = NORMALIZE$assay) + RotatedAxis(), file.path(MARKER_DIR,
-      "cell_markers"), 18, 6)
+    p <- hongf_marker_dotplot(sc, features = broad_markers, assay = NORMALIZE$assay)
+    save_plot(p, file.path(MARKER_DIR, "cell_markers"),
+      max(11, length(unique(unlist(broad_markers))) * 0.34 + 3), 6)
   }
 }

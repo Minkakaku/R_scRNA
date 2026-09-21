@@ -40,8 +40,8 @@ normalize_global_02_cluster_umap <- function(project = PROJECT, route = NORMALIZ
   sc <- run_graph_cluster_umap(sc, corrected$reduction, pca_settings$dims, CLUSTER$resolution, "Stepwise global NormalizeData")
   sc <- store_clustering_metadata(sc, "global", corrected$reduction, pca_settings$dims)
 
-  save_umap_plot(DimPlot(sc, label = TRUE, repel = TRUE), stepwise_fig("normalize_global_UMAP_clusters"))
-  save_umap_plot(DimPlot(sc, group.by = "samples"), stepwise_fig("normalize_global_UMAP_by_sample"))
+  save_umap_plot(npg_dimplot(sc, label = TRUE, repel = TRUE), stepwise_fig("normalize_global_UMAP_clusters"))
+  save_umap_plot(npg_dimplot(sc, group.by = "samples"), stepwise_fig("normalize_global_UMAP_by_sample"))
   save_qs2(sc, stepwise_rds("normalize_global_02_cluster_umap"))
   save_qs2(sc, QS2_CLUSTER)
 }
@@ -71,8 +71,8 @@ sct_global_02_cluster_umap <- function(project = PROJECT, route = SCT_ROUTE) {
   sc <- run_graph_cluster_umap(sc, corrected$reduction, pca_settings$dims, CLUSTER$resolution, "Stepwise global SCT")
   sc <- store_clustering_metadata(sc, "global", corrected$reduction, pca_settings$dims)
 
-  save_umap_plot(DimPlot(sc, label = TRUE, repel = TRUE), stepwise_fig("sct_global_UMAP_clusters"))
-  save_umap_plot(DimPlot(sc, group.by = "samples"), stepwise_fig("sct_global_UMAP_by_sample"))
+  save_umap_plot(npg_dimplot(sc, label = TRUE, repel = TRUE), stepwise_fig("sct_global_UMAP_clusters"))
+  save_umap_plot(npg_dimplot(sc, group.by = "samples"), stepwise_fig("sct_global_UMAP_by_sample"))
   save_qs2(sc, stepwise_rds("sct_global_02_cluster_umap"))
   save_qs2(sc, QS2_CLUSTER)
 }
@@ -105,9 +105,9 @@ normalize_subcluster_02_cluster_umap <- function(project = PROJECT, route = NORM
   obj$subcluster_parent <- paste(SUBCLUSTER$target_celltype, collapse = ",")
   obj$cluster_id <- as.character(Idents(obj))
 
-  save_umap_plot(DimPlot(obj, label = TRUE, repel = TRUE), stepwise_fig("normalize_subcluster_UMAP_clusters"))
-  save_umap_plot(DimPlot(obj, group.by = "samples"), stepwise_fig("normalize_subcluster_UMAP_by_sample"))
-  save_umap_plot(DimPlot(obj, group.by = "group"), stepwise_fig("normalize_subcluster_UMAP_by_group"))
+  save_umap_plot(npg_dimplot(obj, label = TRUE, repel = TRUE), stepwise_fig("normalize_subcluster_UMAP_clusters"))
+  save_umap_plot(npg_dimplot(obj, group.by = "samples"), stepwise_fig("normalize_subcluster_UMAP_by_sample"))
+  save_umap_plot(npg_dimplot(obj, group.by = "group"), stepwise_fig("normalize_subcluster_UMAP_by_group"))
   save_qs2(obj, stepwise_rds("normalize_subcluster_02_cluster_umap"))
   save_qs2(obj, QS2_SUBCLUSTER_CLUSTERED)
 }
@@ -140,9 +140,9 @@ sct_subcluster_02_cluster_umap <- function(project = PROJECT, route = SCT_ROUTE)
   obj$subcluster_parent <- paste(SUBCLUSTER$target_celltype, collapse = ",")
   obj$cluster_id <- as.character(Idents(obj))
 
-  save_umap_plot(DimPlot(obj, label = TRUE, repel = TRUE), stepwise_fig("sct_subcluster_UMAP_clusters"))
-  save_umap_plot(DimPlot(obj, group.by = "samples"), stepwise_fig("sct_subcluster_UMAP_by_sample"))
-  save_umap_plot(DimPlot(obj, group.by = "group"), stepwise_fig("sct_subcluster_UMAP_by_group"))
+  save_umap_plot(npg_dimplot(obj, label = TRUE, repel = TRUE), stepwise_fig("sct_subcluster_UMAP_clusters"))
+  save_umap_plot(npg_dimplot(obj, group.by = "samples"), stepwise_fig("sct_subcluster_UMAP_by_sample"))
+  save_umap_plot(npg_dimplot(obj, group.by = "group"), stepwise_fig("sct_subcluster_UMAP_by_group"))
   save_qs2(obj, stepwise_rds("sct_subcluster_02_cluster_umap"))
   save_qs2(obj, QS2_SUBCLUSTER_CLUSTERED)
 }

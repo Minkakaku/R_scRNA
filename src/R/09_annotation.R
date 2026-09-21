@@ -132,21 +132,21 @@ cleanup_removed_clusters <- function(obj, cleanup, context, output_dir) {
 
 # 输出细胞类型 UMAP 及按样本、实验组拆分的展示图。
 save_annotation_plots <- function(sc) {
-  save_umap_plot(DimPlot(sc, group.by = "cell_type", label = TRUE, repel = TRUE), file.path(ANNOTATION_DIR,
+  save_umap_plot(npg_dimplot(sc, group.by = "cell_type", label = TRUE, repel = TRUE), file.path(ANNOTATION_DIR,
     "UMAP_by_celltype"))
-  save_umap_plot(DimPlot(sc, group.by = "cell_type", split.by = "samples", ncol = 4), file.path(ANNOTATION_DIR,
+  save_umap_plot(npg_dimplot(sc, group.by = "cell_type", split.by = "samples", ncol = 4), file.path(ANNOTATION_DIR,
     "UMAP_split_by_sample"))
-  save_umap_plot(DimPlot(sc, group.by = "cell_type", split.by = "group", ncol = 3), file.path(ANNOTATION_DIR,
+  save_umap_plot(npg_dimplot(sc, group.by = "cell_type", split.by = "group", ncol = 3), file.path(ANNOTATION_DIR,
     "UMAP_split_by_group"))
 }
 
 # 输出子类型 UMAP 及按实验组、样本拆分的展示图。
 save_subcluster_annotation_plots <- function(obj) {
-  save_umap_plot(DimPlot(obj, group.by = "sub_cell_type", label = TRUE, repel = TRUE), file.path(SUBCLUSTER_DIR,
+  save_umap_plot(npg_dimplot(obj, group.by = "sub_cell_type", label = TRUE, repel = TRUE), file.path(SUBCLUSTER_DIR,
     "UMAP_by_sub_cell_type"))
-  save_umap_plot(DimPlot(obj, group.by = "sub_cell_type", split.by = "group", ncol = 3), file.path(SUBCLUSTER_DIR,
+  save_umap_plot(npg_dimplot(obj, group.by = "sub_cell_type", split.by = "group", ncol = 3), file.path(SUBCLUSTER_DIR,
     "UMAP_split_by_group"))
-  save_umap_plot(DimPlot(obj, group.by = "sub_cell_type", split.by = "samples", ncol = 3), file.path(SUBCLUSTER_DIR,
+  save_umap_plot(npg_dimplot(obj, group.by = "sub_cell_type", split.by = "samples", ncol = 3), file.path(SUBCLUSTER_DIR,
     "UMAP_split_by_samples"))
 }
 

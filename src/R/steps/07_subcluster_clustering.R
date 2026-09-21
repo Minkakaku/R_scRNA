@@ -17,15 +17,15 @@ step_subcluster_clustering <- function() {
   obj <- run_subcluster_clustering(obj)
 
   save_umap_plot(
-    DimPlot(obj, label = TRUE, repel = TRUE),
+    npg_dimplot(obj, label = TRUE, repel = TRUE),
     file.path(SUBCLUSTER_DIR, "UMAP_clusters")
   )
   save_umap_plot(
-    DimPlot(obj, group.by = "samples"),
+    npg_dimplot(obj, group.by = "samples"),
     file.path(SUBCLUSTER_DIR, "UMAP_by_sample")
   )
   save_umap_plot(
-    DimPlot(obj, group.by = "group"),
+    npg_dimplot(obj, group.by = "group"),
     file.path(SUBCLUSTER_DIR, "UMAP_by_group")
   )
 

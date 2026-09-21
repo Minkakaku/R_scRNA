@@ -19,8 +19,7 @@ plot_celltype_distribution <- function(
   meta$Sample <- factor(meta$Sample, levels = sample_levels)
   meta$CellType <- factor(meta$CellType)
 
-  palette <- colorRampPalette(brewer.pal(12, "Paired"))(nlevels(meta$CellType))
-  names(palette) <- levels(meta$CellType)
+  palette <- npg_palette(levels(meta$CellType))
   df <- as.data.frame(table(meta$Sample, meta$CellType))
   colnames(df) <- c("Sample", "CellType", "Number")
 
@@ -67,8 +66,7 @@ plot_celltype_sankey <- function(
   }
 
   target_levels <- sort(unique(as.character(df$Target)))
-  palette <- colorRampPalette(brewer.pal(12, "Paired"))(length(target_levels))
-  names(palette) <- target_levels
+  palette <- npg_palette(target_levels)
 
   p <- ggplot(
     df,
@@ -92,7 +90,7 @@ plot_celltype_sankey <- function(
 }
 
 # 将 pheatmap 的 gtable 分别绘制到 PNG/PDF 设备，并确保关闭设备。
-save_pheatmap_plot <- function(p, path_no_ext, width = 8, height = 6, dpi = 300) {
+save_pheatmap_plot <- function(p, path_no_ext, width = 8, height = 6, dpi = 600) {
   dir.create(dirname(path_no_ext), recursive = TRUE, showWarnings = FALSE)
 
   png(paste0(path_no_ext, ".png"), width = width * dpi, height = height * dpi, res = dpi)

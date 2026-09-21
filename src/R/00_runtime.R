@@ -1,6 +1,32 @@
 # 当左侧为 NULL 或空向量时使用默认值；其余值原样返回。
 `%||%` <- function(x, y) if (is.null(x) || length(x) == 0) y else x
 
+HONGF_NPG <- c(
+  "#E64B35", "#4DBBD5", "#00A087", "#3C5488", "#F39B7F",
+  "#8491B4", "#91D1C2", "#DC0000", "#7E6148", "#B09C85"
+)
+HONGF_NPG_SEQUENTIAL <- c("#FFF5F0", "#F39B7F", "#E64B35", "#7A0019")
+HONGF_NPG_DIVERGING <- c("#3C5488", "#F7F7F7", "#E64B35")
+
+# 按固定 NPG 顺序生成分类配色；超过 10 类时从 NPG 锚点扩展。
+npg_palette <- function(labels) {
+  labels <- as.character(labels)
+  colors <- HONGF_NPG
+  if (length(labels) > length(colors)) {
+    extra_n <- length(labels) - length(colors)
+    extra <- grDevices::colorRampPalette(HONGF_NPG)(2L * extra_n + 1L)[seq.int(2L, 2L * extra_n, by = 2L)]
+    colors <- c(colors, extra)
+  }
+  stats::setNames(colors[seq_along(labels)], labels)
+}
+
+options(
+  ggplot2.discrete.colour = function(...) ggplot2::discrete_scale("colour",
+    palette = function(n) unname(npg_palette(seq_len(n))), ...),
+  ggplot2.discrete.fill = function(...) ggplot2::discrete_scale("fill",
+    palette = function(n) unname(npg_palette(seq_len(n))), ...)
+)
+
 # 输出带时间戳的进度信息，便于定位各分析步骤。
 log_msg <- function(...) message("[", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "] ", ...)
 
@@ -36,8 +62,46 @@ read_qs2 <- function(path) {
 # 按同一文件名前缀保存白底 PNG 和 PDF，尺寸单位为英寸。
 save_plot <- function(p, path_no_ext, width = 8, height = 6) {
   dir.create(dirname(path_no_ext), recursive = TRUE, showWarnings = FALSE)
-  ggsave(paste0(path_no_ext, ".png"), p, width = width, height = height, dpi = 300, limitsize = FALSE, bg = "white")
+  if (inherits(p, "patchwork")) {
+    p <- p & ggplot2::theme(plot.subtitle = ggplot2::element_blank())
+  } else if (inherits(p, "ggplot")) {
+    p <- p + ggplot2::labs(subtitle = NULL) + ggplot2::theme(plot.subtitle = ggplot2::element_blank())
+  }
+  ggsave(paste0(path_no_ext, ".png"), p, width = width, height = height, dpi = 600, limitsize = FALSE, bg = "white")
   ggsave(paste0(path_no_ext, ".pdf"), p, width = width, height = height, limitsize = FALSE, bg = "white")
+}
+
+# 默认输出非栅格 UMAP，并以标签的稳定顺序应用 NPG 分类色。
+npg_dimplot <- function(object, group.by = NULL, ..., raster = FALSE) {
+  values <- if (is.null(group.by)) Seurat::Idents(object) else object[[group.by, drop = TRUE]]
+  labels <- if (is.factor(values)) levels(droplevels(values)) else sort(unique(as.character(values)))
+  Seurat::DimPlot(object, group.by = group.by, ..., raster = raster, cols = npg_palette(labels))
+}
+
+# 参考点图：白底细边框、无内部网格、纵向标签、底部双图例。
+HONGF_DOTPLOT_COLORS <- c("#FDEBE5", "#F6B29D", "#E85C47", "#A50F2D", "#67000D")
+hongf_dotplot_style <- function(p) {
+  p +
+    ggplot2::scale_color_gradientn(colours = HONGF_DOTPLOT_COLORS,
+      guide = ggplot2::guide_colorbar(display = "rectangles")) +
+    ggplot2::guides(
+      size = ggplot2::guide_legend(order = 1, title.position = "top", nrow = 1,
+        override.aes = list(colour = "black")),
+      colour = ggplot2::guide_colorbar(order = 2, title.position = "top", display = "rectangles",
+        barwidth = grid::unit(30, "mm"), barheight = grid::unit(3, "mm"))) +
+    ggplot2::theme_bw(base_size = 10) +
+    ggplot2::theme(
+      plot.title = ggplot2::element_blank(),
+      plot.subtitle = ggplot2::element_blank(),
+      panel.grid = ggplot2::element_blank(),
+      panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.55),
+      axis.ticks = ggplot2::element_blank(),
+      axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5, color = "black"),
+      axis.text.y = ggplot2::element_text(color = "black"),
+      legend.position = "bottom", legend.box = "horizontal",
+      legend.title = ggplot2::element_text(size = 9), legend.text = ggplot2::element_text(size = 8),
+      plot.margin = ggplot2::margin(5.5, 0, 5.5, 5.5)
+    )
 }
 
 # 为普通图或 patchwork 各面板设置等比例坐标及可选统一范围。

@@ -10,7 +10,12 @@ read_sample_sheet <- function(path = SAMPLE_SHEET_PATH, required = FALSE) {
     if (required) stop("Sample group CSV not found: ", path, call. = FALSE)
     return(NULL)
   }
-  read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+  sheet <- read.delim(path, stringsAsFactors = FALSE, check.names = FALSE)
+  if (!nrow(sheet)) {
+    if (required) stop("请先填写项目 config/samples.tsv 的样本分组", call. = FALSE)
+    return(NULL)
+  }
+  sheet
 }
 
 write_sample_group_sheet <- function(sc, path = SAMPLE_SHEET_PATH) {
@@ -25,7 +30,7 @@ write_sample_group_sheet <- function(sc, path = SAMPLE_SHEET_PATH) {
     manifest$group[keep] <- old_group[manifest$sample[keep]]
   }
 
-  write.csv(manifest, path, row.names = FALSE, quote = FALSE)
+  write.table(manifest, path, sep = "\t", row.names = FALSE, quote = FALSE)
   invisible(path)
 }
 

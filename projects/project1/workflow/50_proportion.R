@@ -1,0 +1,5 @@
+script <- normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1]))
+project <- dirname(dirname(script))
+source(file.path(project, "../../src/R/project.R"))
+load_project(project)
+step_cell_proportion()

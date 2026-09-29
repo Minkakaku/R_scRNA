@@ -1,11 +1,7 @@
-# 代码分层
+# 项目分层
 
-`src/00_runtime.R` 到 `src/12_visualization.R` 是底层通用函数；`src/steps/` 把底层函数组合成可直接调用的分析点；`workflow/` 记录当前项目在哪一天、以什么顺序实际调用了哪些分析点。
+公共方法在仓库 src/R 或 src/python；公共默认在根 config；项目参数与人工表格在 projects/<项目>/config；实际执行脚本在项目 workflow。编号步骤仅加载配置、调用共享方法与写日志。中间对象在项目 data/processed，结果在项目 results，环境在 envs。
 
-新增代码时按下面判断：
+新项目复制 projects/project1，再按仓库 README 调整配置和运行。不要修改公共代码中的路径来适配项目。保留已经执行的步骤，重跑新增编号和输出目录。
 
-- 换一个项目仍然成立：放 `src/`。
-- 只与当前项目的 cluster、marker、对象或人工判断有关：放新的 workflow 步骤。
-- 只是参数变化：放 `config/config.R`。
-
-不要把生成的数据对象、图片或表格放进 `src/`。
+R 默认表达式在 default.R，YAML 用于逐层覆盖。

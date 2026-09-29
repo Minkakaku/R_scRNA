@@ -1,0 +1,3 @@
+CLUSTER:
+  resolution: 0.4
+# 其余参数继承 config/default.R；嵌套映射按键覆盖。

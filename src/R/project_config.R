@@ -170,7 +170,12 @@ load_project_config <- function(project_dir) {
   # 将解析后的配置注册到全局环境，供现有 R 步骤函数共同使用。
   list2env(values, envir = .GlobalEnv)
   options(future.globals.maxSize = config$future_globals_max_size_gb * 1024^3)
-  invisible(lapply(unique(c(unlist(project, use.names = FALSE), report_dir)), dir.create,
+  directories <- unique(c(unlist(project, use.names = FALSE), report_dir))
+  # 已整理的项目按实际分析创建结果模块，加载配置时不重新生成空结果目录。
+  if (identical(config$initialize_result_subdirs, FALSE)) {
+    directories <- setdiff(directories, c(qc_dir, global_dir, marker_dir, annotation_dir, proportion_dir, subcluster_dir))
+  }
+  invisible(lapply(directories, dir.create,
     recursive = TRUE, showWarnings = FALSE))
   invisible(project)
 }

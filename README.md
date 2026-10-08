@@ -56,3 +56,11 @@ Rscript tests/test_project_config.R
 ## 历史代码
 
 `source_catalog/` 收录 609 份 R/R Markdown/Shell 语义副本；`SOURCE_CATALOG.tsv` 记录场景、角色、owner 和 SHA-256。正式分析优先使用 `src/R/`，不要把历史脚本中的内部路径和固定生物学判断复制到复用层。
+
+## 从项目工作区复用的可选模块
+
+共享模块目录见 `src/R/README.md`。新增步骤由项目配置驱动，仅在对应编号 workflow 显式调用时执行；不会自动重做分析。`initialize_result_subdirs: false` 允许配置加载时只建立基础目录，分析点结果目录按需创建。PCA 重绘可指定 `save_tables = FALSE` 和 `selected_pc`。
+
+既有 QS 处理/Harmony 检查还需 `qs`、`digest`、`jsonlite`；AUCell、富集和伪 bulk 模块按调用方法准备 AUCell、clusterProfiler、fgsea、edgeR 等对应依赖。公共环境不自动安装这些可选包。Python 文献工具使用标准库，PDF 合辑与校验另需 pypdf/Pillow。
+
+运行 `Rscript tests/test_result_directory_config.R` 检查目录开关；具备 qs/Seurat/Harmony 时运行 `Rscript tests/test_harmony_selected_pcs.R`。项目固定标注、历史修正版和真实输出校验保留在实际工作区。CellChat 独立脚本由 `R-cellchat-workflow-template` 管理。

@@ -33,11 +33,13 @@ detect_pca_elbow <- function(obj, reduction = "pca") {
 }
 
 # 保存 PCA 方差表、不同方法的拐点建议及带标线的配对图。
-save_pca_elbow <- function(obj, path_no_ext, reduction = "pca") {
+save_pca_elbow <- function(obj, path_no_ext, reduction = "pca", save_tables = TRUE, selected_pc = NULL) {
   result <- detect_pca_elbow(obj, reduction)
   dir.create(dirname(path_no_ext), recursive = TRUE, showWarnings = FALSE)
-  write.csv(result$variance, paste0(path_no_ext, "_variance.csv"), row.names = FALSE, quote = FALSE)
-  write.csv(result$selections, paste0(path_no_ext, "_selection.csv"), row.names = FALSE, quote = FALSE)
+  if (save_tables) {
+    write.csv(result$variance, paste0(path_no_ext, "_variance.csv"), row.names = FALSE, quote = FALSE)
+    write.csv(result$selections, paste0(path_no_ext, "_selection.csv"), row.names = FALSE, quote = FALSE)
+  }
 
   method_colors <- c(PCAtools = HONGF_NPG[1], nFactors_noc = HONGF_NPG[4], nFactors_naf = HONGF_NPG[3])
   p <- ggplot(result$variance, aes(pc, variance_percent)) +
@@ -58,6 +60,10 @@ save_pca_elbow <- function(obj, path_no_ext, reduction = "pca") {
     ) +
     theme_classic(base_size = 13) +
     theme(plot.title = element_text(hjust = 0.5))
+  if (!is.null(selected_pc)) {
+    p <- p + geom_vline(xintercept = selected_pc, color = "black", linewidth = 0.8, linetype = "dashed") +
+      labs(caption = paste0("Analysis uses PC1-", selected_pc, "; black dashed line"))
+  }
   save_plot(p, path_no_ext)
   log_msg(
     "Automatic PCA elbow: ",

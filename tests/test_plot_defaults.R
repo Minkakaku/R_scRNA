@@ -39,3 +39,10 @@ stopifnot(inherits(panel, "patchwork"),
 # 强制排版，检验底部图例和两侧面板能同时渲染。
 stopifnot(inherits(patchwork::patchworkGrob(panel), "gtable"))
 cat("REFERENCE_DOTPLOT_OK: Seurat values preserved; counts aligned; one panel; bottom legends\n")
+
+# 核对连续图元的默认色阶端点，显式 scale 仍由调用者控制。
+continuous <- data.frame(x = 1:2, y = 1:2, value = c(0, 1))
+continuous_plot <- ggplot(continuous, aes(x, y, colour = value, fill = value)) + geom_point(shape = 21)
+continuous_built <- ggplot_build(continuous_plot)$data[[1]]
+stopifnot(identical(continuous_built$colour, HONGF_NPG_SEQUENTIAL[c(1, 4)]),
+          identical(continuous_built$fill, HONGF_NPG_SEQUENTIAL[c(1, 4)]))

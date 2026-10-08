@@ -24,7 +24,12 @@ options(
   ggplot2.discrete.colour = function(...) ggplot2::discrete_scale("colour",
     palette = function(n) unname(npg_palette(seq_len(n))), ...),
   ggplot2.discrete.fill = function(...) ggplot2::discrete_scale("fill",
-    palette = function(n) unname(npg_palette(seq_len(n))), ...)
+    palette = function(n) unname(npg_palette(seq_len(n))), ...),
+  # 未指定色阶的连续图也使用 NPG 衍生渐变。
+  ggplot2.continuous.colour = function(...) ggplot2::scale_colour_gradientn(
+    colours = HONGF_NPG_SEQUENTIAL, ...),
+  ggplot2.continuous.fill = function(...) ggplot2::scale_fill_gradientn(
+    colours = HONGF_NPG_SEQUENTIAL, ...)
 )
 
 # 输出带时间戳的进度信息，便于定位各分析步骤。

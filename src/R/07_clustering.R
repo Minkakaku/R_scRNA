@@ -14,34 +14,60 @@ pca_variance_table <- function(obj, reduction = "pca") {
 }
 
 # 并列记录 PCAtools 与 nFactors 的 PC 建议，以 PCAtools 结果作为推荐值。
-detect_pca_elbow <- function(obj, reduction = "pca") {
-  variance <- pca_variance_table(obj, reduction)
-  scree <- nFactors::nScree(x = variance$variance)
+# 从方差表记录几何拐点及累计解释度；可选包建议只作参考。
+detect_pca_elbow_from_variance <- function(variance) {
+  stopifnot(all(c("pc", "variance", "variance_percent", "cumulative_percent") %in% names(variance)),
+            nrow(variance) > 0, all(is.finite(as.matrix(variance))), all(variance$variance >= 0),
+            all(diff(variance$pc) > 0))
+  x <- variance$pc
+  y <- variance$variance_percent
+  line_y <- if (length(x) == 1L) y else y[[1]] + (y[[length(y)]] - y[[1]]) * (x - x[[1]]) / (x[[length(x)]] - x[[1]])
+  curvature_pc <- if (length(x) == 1L) x[[1L]] else x[[which.max(line_y - y)]]
+  cumulative_80 <- x[[if (any(variance$cumulative_percent >= 80)) which(variance$cumulative_percent >= 80)[1] else length(x)]]
+  cumulative_90 <- x[[if (any(variance$cumulative_percent >= 90)) which(variance$cumulative_percent >= 90)[1] else length(x)]]
   selections <- data.frame(
-    method = c("PCAtools", "nFactors_noc", "nFactors_naf"),
-    pc = as.integer(c(
-      PCAtools::findElbowPoint(variance$variance_percent),
-      scree$Components$noc,
-      scree$Components$naf
-    ))
+    method = c("max_curvature", "cumulative_80", "cumulative_90"),
+    pc = as.integer(c(curvature_pc, cumulative_80, cumulative_90)),
+    stringsAsFactors = FALSE
   )
+  if (length(x) > 1L && requireNamespace("PCAtools", quietly = TRUE)) {
+    selections <- rbind(
+      selections,
+      data.frame(
+        method = "PCAtools",
+        pc = as.integer(PCAtools::findElbowPoint(variance$variance_percent)),
+        stringsAsFactors = FALSE
+      )
+    )
+  }
+  if (requireNamespace("nFactors", quietly = TRUE) && length(x) > 1L) {
+    # 部分短方差曲线使可选 nFactors 算法失败，仍保留其他独立建议。
+    scree <- tryCatch(nFactors::nScree(x = variance$variance), error = function(e) NULL)
+    if (!is.null(scree)) selections <- rbind(selections, data.frame(method = c("nFactors_noc", "nFactors_naf"),
+      pc = as.integer(c(scree$Components$noc, scree$Components$naf))))
+  }
+  recommended <- if ("PCAtools" %in% selections$method) selections$pc[selections$method == "PCAtools"] else curvature_pc
   list(
-    recommended_pc = selections$pc[selections$method == "PCAtools"],
+    recommended_pc = recommended,
     selections = selections,
     variance = variance
   )
 }
 
+# Seurat 对象与既有方差表共用同一建议实现。
+detect_pca_elbow <- function(obj, reduction = "pca") {
+  detect_pca_elbow_from_variance(pca_variance_table(obj, reduction))
+}
+
 # 保存 PCA 方差表、不同方法的拐点建议及带标线的配对图。
-save_pca_elbow <- function(obj, path_no_ext, reduction = "pca", save_tables = TRUE, selected_pc = NULL) {
-  result <- detect_pca_elbow(obj, reduction)
+save_pca_elbow_result <- function(result, path_no_ext, save_tables = TRUE, selected_pc = NULL) {
   dir.create(dirname(path_no_ext), recursive = TRUE, showWarnings = FALSE)
   if (save_tables) {
     write.csv(result$variance, paste0(path_no_ext, "_variance.csv"), row.names = FALSE, quote = FALSE)
     write.csv(result$selections, paste0(path_no_ext, "_selection.csv"), row.names = FALSE, quote = FALSE)
   }
 
-  method_colors <- c(PCAtools = HONGF_NPG[1], nFactors_noc = HONGF_NPG[4], nFactors_naf = HONGF_NPG[3])
+  method_colors <- npg_palette(result$selections$method)
   p <- ggplot(result$variance, aes(pc, variance_percent)) +
     geom_line(linewidth = 0.55, color = "#4D4D4D") +
     geom_point(size = 1.6, color = "#4D4D4D") +
@@ -70,6 +96,17 @@ save_pca_elbow <- function(obj, path_no_ext, reduction = "pca", save_tables = TR
     paste0(result$selections$method, "=PC", result$selections$pc, collapse = ", ")
   )
   invisible(result)
+}
+
+# 保持原对象接口和选定 PC 标线，同时支持不输出派生表。
+save_pca_elbow <- function(obj, path_no_ext, reduction = "pca", save_tables = TRUE, selected_pc = NULL) {
+  save_pca_elbow_result(detect_pca_elbow(obj, reduction), path_no_ext, save_tables, selected_pc)
+}
+
+# 从既有 CSV 重绘 PCA 图，不读取或重算大对象。
+repair_pca_elbow_outputs_from_csv <- function(path_no_ext, save_tables = FALSE, selected_pc = NULL) {
+  variance <- read.csv(paste0(path_no_ext, "_variance.csv"), check.names = FALSE)
+  save_pca_elbow_result(detect_pca_elbow_from_variance(variance), path_no_ext, save_tables, selected_pc)
 }
 
 # 在对象 misc 中记录本轮聚类实际使用的降维与 PC 维度。

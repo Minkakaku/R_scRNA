@@ -113,6 +113,75 @@ join_assay_layers_if_possible <- function(obj, assay, context_label) {
 }
 
 # 逐样本 SCT 后选择共同特征、寻找锚点并生成整合 assay。
+# 按共同特征的出现频率与中位排名选择 SCT 整合基因，处理嵌套 VariableFeatures。
+select_integration_features_robust <- function(object.list, nfeatures, assay) {
+  if (!length(object.list) || length(nfeatures) != 1L || !is.finite(nfeatures) || nfeatures < 1L) {
+    stop("Provide nonempty objects and a positive feature count.", call. = FALSE)
+  }
+  if (length(assay) == 1) assay <- rep(assay, length(object.list))
+  if (length(assay) != length(object.list)) stop("Provide one assay per object.", call. = FALSE)
+  vf_list <- lapply(seq_along(object.list), function(i) {
+    unique(as.character(unlist(
+      VariableFeatures(object.list[[i]], assay = assay[[i]]),
+      recursive = TRUE,
+      use.names = FALSE
+    )))
+  })
+  if (any(lengths(vf_list) == 0)) {
+    stop("At least one SCT sample has no variable features.", call. = FALSE)
+  }
+
+  assay_features <- lapply(seq_along(object.list), function(i) {
+    rownames(object.list[[i]][[assay[[i]]]])
+  })
+  common_features <- Reduce(intersect, assay_features)
+  frequency <- table(unlist(vf_list, recursive = TRUE, use.names = FALSE))
+  candidates <- intersect(names(frequency), common_features)
+  if (length(candidates) == 0) {
+    stop("No common variable features across SCT samples.", call. = FALSE)
+  }
+
+  median_rank <- vapply(candidates, function(feature) {
+    ranks <- vapply(vf_list, function(vf) {
+      rank <- match(feature, vf)
+      if (is.na(rank)) NA_real_ else as.numeric(rank)
+    }, numeric(1))
+    median(ranks, na.rm = TRUE)
+  }, numeric(1))
+  candidate_frequency <- as.integer(frequency[candidates])
+  selected_order <- order(-candidate_frequency, median_rank, candidates)
+  selected <- as.character(head(candidates[selected_order], nfeatures))
+  if (length(selected) < min(nfeatures, length(candidates))) {
+    stop("Robust integration feature selection returned too few features.", call. = FALSE)
+  }
+  selected
+}
+
+# 优先使用 Seurat 原生选择，接口失败时采用项目中验证的共同特征回退。
+select_integration_features_safe <- function(object.list, nfeatures, assay, context_label) {
+  tryCatch(
+    run_step(
+      paste0(context_label, " SelectIntegrationFeatures nfeatures=", nfeatures),
+      SelectIntegrationFeatures(
+        object.list = object.list,
+        nfeatures = nfeatures,
+        assay = assay
+      )
+    ),
+    error = function(e) {
+      log_msg(
+        context_label,
+        " SelectIntegrationFeatures failed: ", conditionMessage(e),
+        ". Using robust frequency/rank fallback."
+      )
+      run_step(
+        paste0(context_label, " robust integration feature selection nfeatures=", nfeatures),
+        select_integration_features_robust(object.list, nfeatures, assay)
+      )
+    }
+  )
+}
+
 run_per_sample_sct_integration <- function(obj, settings, cluster_settings, context_label) {
   required_fns <- c(
     "SplitObject",
@@ -155,9 +224,9 @@ run_per_sample_sct_integration <- function(obj, settings, cluster_settings, cont
     run_sctransform(obj_list[[sample_name]], settings, paste0(context_label, " sample=", sample_name))
   }), sample_names)
 
-  features <- run_step(
-    paste0(context_label, " SelectIntegrationFeatures nfeatures=", settings$nfeatures),
-    SelectIntegrationFeatures(object.list = obj_list, nfeatures = settings$nfeatures)
+  features <- select_integration_features_safe(
+    object.list = obj_list, nfeatures = settings$nfeatures,
+    assay = rep(settings$assay, length(obj_list)), context_label = context_label
   )
 
   obj_list <- run_step(
@@ -239,9 +308,9 @@ run_per_sample_sct_merge <- function(obj, settings, cluster_settings, context_la
     run_sctransform(obj_list[[sample_name]], settings, paste0(context_label, " sample=", sample_name))
   }), sample_names)
 
-  features <- run_step(
-    paste0(context_label, " SelectIntegrationFeatures nfeatures=", settings$nfeatures),
-    SelectIntegrationFeatures(object.list = obj_list, nfeatures = settings$nfeatures)
+  features <- select_integration_features_safe(
+    object.list = obj_list, nfeatures = settings$nfeatures,
+    assay = rep(settings$assay, length(obj_list)), context_label = context_label
   )
   obj_list <- run_step(
     paste0(context_label, " PrepSCTIntegration for merge"),

@@ -2,6 +2,8 @@
 
 这是可移植的 Seurat 单细胞主流程模板。复用函数、公共配置和具体项目分开保存；历史参考代码仍保留在 `source_catalog/`，不参与正式运行。
 
+项目代码已补入公有实现：样本 TSV/CSV 校验与对象元数据导出、SCT 共同特征选择回退、既有 PCA 方差表重绘。现有函数调用接口继续可用。可选的 `src/R/gene_id_harmonization.R` 提供用户指定 HGNC 参考的映射与 counts 合并，`src/R/annotation_validation.R` 提供 ARI、NMI、纯度和质心分离指标；须在新 workflow 中显式 source，不自动处理已有对象。对应检查：`Rscript --vanilla tests/test_project_function_updates.R`。
+
 ```text
 .
 ├── src/R/                         # 通用函数和复用分析步骤

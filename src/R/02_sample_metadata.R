@@ -7,18 +7,50 @@ as_character_column <- function(df, column_name, context_label = "table") {
   as.character(df[[column_name]])
 }
 
-# 读取样本 TSV；必需表缺失时报错，可选表缺失时返回 NULL。
+# 读取 TSV/CSV 样本表，校验重复样本；必需表还须包含完整分组。
 read_sample_sheet <- function(path = SAMPLE_SHEET_PATH, required = FALSE) {
   if (!file.exists(path)) {
     if (required) stop("Sample sheet not found: ", path, call. = FALSE)
     return(NULL)
   }
-  read.delim(path, stringsAsFactors = FALSE, check.names = FALSE)
+  reader <- if (tolower(tools::file_ext(path)) == "csv") read.csv else read.delim
+  sheet <- reader(path, stringsAsFactors = FALSE, check.names = FALSE)
+  missing_columns <- setdiff(c("sample", "group"), colnames(sheet))
+  if (length(missing_columns)) stop("Sample sheet is missing columns: ", paste(missing_columns, collapse = ", "), call. = FALSE)
+  if (any(!has_text(sheet$sample)) || anyDuplicated(sheet$sample)) {
+    stop("Sample sheet contains missing or duplicated sample IDs.", call. = FALSE)
+  }
+  if (required && any(!has_text(sheet$group))) stop("Sample sheet contains missing groups.", call. = FALSE)
+  sheet
 }
 
 # 刷新当前样本清单，并保留已有样本表中人工填写的分组。
-write_sample_group_sheet <- function(sc, path = SAMPLE_SHEET_PATH) {
+write_sample_group_sheet <- function(sc, path = SAMPLE_SHEET_PATH, metadata_columns = NULL) {
   samples <- unique(as.character(sc$orig.ident))
+  metadata <- sc[[]]
+  # 现成对象可直接提供分组和可选样本信息，无需重新访问原始矩阵目录。
+  if (is.null(metadata_columns) && "group" %in% names(metadata)) metadata_columns <- c(group = "group")
+  if (length(metadata_columns)) {
+    if (is.null(names(metadata_columns)) || !"group" %in% names(metadata_columns) ||
+        !all(unname(metadata_columns) %in% names(metadata))) stop("Invalid sample metadata columns.", call. = FALSE)
+    rows <- lapply(samples, function(sample) {
+      hit <- metadata[as.character(metadata$orig.ident) == sample, , drop = FALSE]
+      values <- lapply(unname(metadata_columns), function(column) {
+        observed <- unique(as.character(hit[[column]]))
+        observed <- observed[has_text(observed)]
+        if (length(observed) > 1L) stop("Inconsistent ", column, " metadata for sample ", sample, call. = FALSE)
+        if (length(observed)) observed[[1L]] else NA_character_
+      })
+      names(values) <- names(metadata_columns)
+      as.data.frame(c(list(sample = sample), values), stringsAsFactors = FALSE)
+    })
+    manifest <- do.call(rbind, rows)
+    if (any(!has_text(manifest$group))) stop("Cannot write missing sample groups.", call. = FALSE)
+    dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+    write.table(manifest, path, sep = if (tolower(tools::file_ext(path)) == "csv") "," else "\t",
+                row.names = FALSE, quote = tolower(tools::file_ext(path)) == "csv")
+    return(invisible(path))
+  }
   manifest <- discover_samples(DATA_DIR)
   manifest <- manifest[match(samples, manifest$sample), , drop = FALSE]
 
@@ -29,7 +61,9 @@ write_sample_group_sheet <- function(sc, path = SAMPLE_SHEET_PATH) {
     manifest$group[keep] <- old_group[manifest$sample[keep]]
   }
 
-  write.table(manifest, path, sep = "\t", row.names = FALSE, quote = FALSE)
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  write.table(manifest, path, sep = if (tolower(tools::file_ext(path)) == "csv") "," else "\t",
+              row.names = FALSE, quote = tolower(tools::file_ext(path)) == "csv")
   invisible(path)
 }
 
@@ -61,5 +95,9 @@ assign_group_metadata <- function(sc, required_sheet = FALSE) {
     unname(group_info$mapping[as.character(sc$orig.ident)]),
     levels = group_info$group_levels
   )
+  if (required_sheet && (anyNA(sc$samples) || anyNA(sc$group))) {
+    missing_samples <- unique(as.character(sc$orig.ident)[is.na(sc$samples) | is.na(sc$group)])
+    stop("Sample sheet does not cover object samples: ", paste(missing_samples, collapse = ", "), call. = FALSE)
+  }
   sc
 }

@@ -16,7 +16,7 @@ roe_dotplot <- function(d, category_levels, split_levels, title) {
     scale_y_discrete(limits = rev(category_levels), drop = FALSE) +
     labs(x = NULL, y = NULL, colour = 'Ro/e', size = 'Ro/e class', title = title,
       caption = 'Size: STARTRAC-dist classes; colour: Ro/e; no dot = 0.') +
-    theme_bw(base_size = 11) + theme(panel.grid = element_line(colour = '#EEEEEE', linewidth = .3),
+    theme_bw(base_size = 11) + theme(panel.grid = element_blank(),
       panel.border = element_rect(colour = 'black', linewidth = .5), axis.ticks = element_blank(),
       axis.text = element_text(colour = 'black'), plot.title = element_text(size = 12),
       plot.caption = element_text(hjust = 0, size = 8), legend.box = 'vertical')

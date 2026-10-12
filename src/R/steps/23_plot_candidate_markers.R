@@ -15,7 +15,7 @@ candidate_dotplot <- function(evidence, mapping, genes, title, scaled = TRUE) {
     scale_y_discrete(limits = rev(as.character(mapping$subgroup_cluster)), labels = row_labels, drop = FALSE) +
     labs(x = NULL, y = NULL, title = title, size = "Expressed (%)",
       color = if (scaled) "Scaled mean" else "log1p mean")
-  p <- hongf_dotplot_style(p) + theme(panel.grid.major.y = element_line(color = "#EEEEEE", linewidth = .25),
+  p <- hongf_dotplot_style(p) + theme(panel.grid.major.y = element_blank(),
     axis.text.y = element_text(size = 9), axis.text.x = element_text(size = 9), plot.title = element_text(size = 12))
   if (scaled) p <- p + scale_color_gradientn(colours = HONGF_DOTPLOT_COLORS, limits = c(-2.5, 2.5),
     guide = guide_colorbar(display = "rectangles"))

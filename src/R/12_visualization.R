@@ -1,3 +1,34 @@
+# 读取项目 Nature/NPG 色板；按名称保留已配置的细胞类型映射。
+project_npg_colors <- function(labels) {
+  project <- if (exists("PROJECT_DIR", inherits = TRUE)) PROJECT_DIR else getwd()
+  path <- file.path(project, "config/palette.yaml")
+  config <- if (file.exists(path)) yaml::read_yaml(path) else list()
+  colors <- if (is.null(config$categorical)) c("#E64B35", "#4DBBD5", "#00A087", "#3C5488", "#F39B7F", "#8491B4", "#91D1C2", "#DC0000", "#7E6148", "#B09C85") else unlist(config$categorical, use.names = FALSE)
+  n <- length(labels)
+  if (n > length(colors)) colors <- c(colors, grDevices::colorRampPalette(colors)(n - length(colors) + 2L)[-c(1L, n - length(colors) + 2L)])
+  result <- stats::setNames(colors[seq_len(n)], labels)
+  mapping <- unlist(config$cell_types)
+  known <- intersect(names(mapping), labels)
+  result[known] <- mapping[known]
+  result
+}
+
+# 将项目色板设为本次 R 会话的 ggplot 默认值，覆盖未显式指定色标的图。
+configure_project_npg <- function() {
+  path <- file.path(PROJECT_DIR, "config/palette.yaml")
+  config <- if (file.exists(path)) yaml::read_yaml(path) else list()
+  sequential <- if (is.null(config$sequential)) c("#FFF5F0", "#F39B7F", "#E64B35", "#7A0019") else unlist(config$sequential, use.names = FALSE)
+  missing <- if (is.null(config$missing)) "#C8C8C8" else config$missing
+  palette <- function(n) unname(project_npg_colors(as.character(seq_len(n))))
+  options(
+    ggplot2.discrete.colour = function(..., na.value = missing) ggplot2::discrete_scale("colour", palette = palette, ..., na.value = na.value),
+    ggplot2.discrete.fill = function(..., na.value = missing) ggplot2::discrete_scale("fill", palette = palette, ..., na.value = na.value),
+    ggplot2.continuous.colour = function(..., na.value = missing) ggplot2::scale_colour_gradientn(colours = sequential, ..., na.value = na.value),
+    ggplot2.continuous.fill = function(..., na.value = missing) ggplot2::scale_fill_gradientn(colours = sequential, ..., na.value = na.value)
+  )
+  invisible(config)
+}
+
 make_tag <- function(x) {
   tag <- gsub("[^A-Za-z0-9_]+", "_", paste(x, collapse = "_vs_"))
   gsub("^_+|_+$", "", tag)
@@ -17,8 +48,7 @@ plot_celltype_distribution <- function(
   meta$Sample <- factor(meta$Sample, levels = sample_levels)
   meta$CellType <- factor(meta$CellType)
 
-  palette <- colorRampPalette(brewer.pal(12, "Paired"))(nlevels(meta$CellType))
-  names(palette) <- levels(meta$CellType)
+  palette <- project_npg_colors(levels(meta$CellType))
   df <- as.data.frame(table(meta$Sample, meta$CellType))
   colnames(df) <- c("Sample", "CellType", "Number")
 
@@ -63,8 +93,7 @@ plot_celltype_sankey <- function(
   }
 
   target_levels <- sort(unique(as.character(df$Target)))
-  palette <- colorRampPalette(brewer.pal(12, "Paired"))(length(target_levels))
-  names(palette) <- target_levels
+  palette <- project_npg_colors(target_levels)
 
   p <- ggplot(
     df,

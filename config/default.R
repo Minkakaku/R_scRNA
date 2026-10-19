@@ -123,7 +123,7 @@ CONTAMINATION_UMAP <- list(
   min_cutoff = 0,
   legend_max = 1,
   point_size = 0.2,
-  colors = c("#FFEFD5", "#E6E6FA", "#87CEFA", "#6495ED", "#4169E1", "#0000CD", "#000080")
+  colors = c("#FFF5F0", "#F39B7F", "#E64B35", "#7A0019")
 )
 
 # 分组、marker 与注释 ----------------------------------------------------

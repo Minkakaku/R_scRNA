@@ -36,7 +36,7 @@ save_pca_elbow <- function(obj, path_no_ext, reduction = "pca") {
   write.csv(result$variance, paste0(path_no_ext, "_variance.csv"), row.names = FALSE, quote = FALSE)
   write.csv(result$selections, paste0(path_no_ext, "_selection.csv"), row.names = FALSE, quote = FALSE)
 
-  method_colors <- c(PCAtools = "#B2182B", nFactors_noc = "#2166AC", nFactors_naf = "#f6ae00")
+  method_colors <- c(PCAtools = "#E64B35", nFactors_noc = "#4DBBD5", nFactors_naf = "#00A087")
   p <- ggplot(result$variance, aes(pc, variance_percent)) +
     geom_line(linewidth = 0.55, color = "#4D4D4D") +
     geom_point(size = 1.6, color = "#4D4D4D") +
